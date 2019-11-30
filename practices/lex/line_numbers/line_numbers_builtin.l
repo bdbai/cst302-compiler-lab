@@ -1,5 +1,7 @@
+%option yylineno
 %%
-^(.*)\n    printf("%4d\t%s", yylineno++, yytext);
+^(.*)$    printf("%4d\t%s\n", yylineno, yytext);
+\n        {}
 %%
 
 int yywrap(void) {

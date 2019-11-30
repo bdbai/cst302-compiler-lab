@@ -12,11 +12,7 @@ There are two ways to workaround this.
 ### Use our own variable
 We define and use our own `lineno` instead of `yylineno`. See `line_numbers_impl.l`.
 
-### Manage `yylineno` correctly
-Since `yylineno` is initialized by value `1`, it should be used to represent the number of the **current** line (not the next one). Therefore, we take the value before it is increased. See `line_numbers_builtin.l`.
+### The `yylineno` option
+`flex` has an built-in option called `yylineno`, which will update `yylineno` automatically. Simply append `--yylineno` to the `lex` command line options or add `%option yylineno` at the beginning of the our `.l` file will do. However, doing so does not solve the problem.
 
-```diff
-< ^(.*)\n    printf("%4d\t%s", yylineno++, yytext);
----
-> ^(.*)\n    printf("%4d\t%s", ++yylineno, yytext);
-```
+`yylineno` starts from 1 and increases upon the first `\n` (new line), which will in turn become 2. To solve it, we separate `\n` (new line) and `$` (line end) so that the line number will be read before its increment. See `line_numbers_builtin.l`.
