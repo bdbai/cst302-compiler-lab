@@ -13,6 +13,6 @@ There are two ways to workaround this.
 We define and use our own `lineno` instead of `yylineno`. See `line_numbers_impl.l`.
 
 ### The `yylineno` option
-`flex` has an built-in option called `yylineno`, which will update `yylineno` automatically. Simply append `--yylineno` to the `lex` command line options or add `%option yylineno` at the beginning of the our `.l` file will do. However, doing so does not solve the problem.
+`flex` has an built-in option called `yylineno`, which will update `yylineno` automatically. Simply appending `--yylineno` to the `lex` command line options or adding `%option yylineno` at the beginning of the our `.l` file will do the trick. However, this does not solve the problem.
 
 `yylineno` starts from 1 and increases upon the first `\n` (new line), which will in turn become 2. To solve it, we separate `\n` (new line) and `$` (line end) so that the line number will be read before its increment. See `line_numbers_builtin.l`.
