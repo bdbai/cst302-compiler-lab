@@ -1,0 +1,14 @@
+# Lex generated files
+lex.yy.c
+
+# Yacc generated files
+y.tab.c
+y.tab.h
+
+# GCC generated files
+a.out
+*.exe
+
+# macOS
+.DS_Store
+
