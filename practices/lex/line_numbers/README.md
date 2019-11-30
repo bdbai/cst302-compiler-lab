@@ -13,7 +13,7 @@ There are two ways to workaround this.
 We define and use our own `lineno` instead of `yylineno`. See `line_numbers_impl.l`.
 
 ### Manage `yylineno` correctly
-Since `yylineno` is initialed by value `1`, it should be used to present the number of the **current** line (not the next one). Therefore, we take the value before it is increased. See `line_numbers_builtin.l`.
+Since `yylineno` is initialized by value `1`, it should be used to represent the number of the **current** line (not the next one). Therefore, we take the value before it is increased. See `line_numbers_builtin.l`.
 
 ```diff
 < ^(.*)\n    printf("%4d\t%s", yylineno++, yytext);
