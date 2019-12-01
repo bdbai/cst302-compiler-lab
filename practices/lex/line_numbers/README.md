@@ -1,6 +1,8 @@
-## About yylineno
+## About yylineno (with flex 2.6.4)
 
 Using the example given in the material (See `line_numbers.l`), one may find that the output starts with 2, not 1. This happens because our lex implementation, `flex`, provides a built-in `yylineno` global variable with an initial value `1`. It can be checked in the generated `lex.yy.c` file around line 332.
+
+*Note this behaviour is not observed on flex 2.5.4*
 
 ```c
 extern int yylineno;

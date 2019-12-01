@@ -9,5 +9,5 @@
 > a version that generates a syntax tree of the original program
 
 ## How to build
-- Run `mingw32-make` to build all 3 components;
-- Run `mingw32-make <component>` to build a single component, e.g. `mingw32-make intepreter` will only build the intepreter.
+- Run `make` to build all 3 components;
+- Run `make <component>` to build a single component. For example, `make intepreter` will only build the intepreter.
