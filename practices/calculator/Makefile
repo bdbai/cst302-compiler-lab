@@ -1,6 +1,6 @@
-MAKEFLAGS += -rR
-LEX=lex
-YACC=yacc
+
+LEX=flex
+YACC=bison
 CC=gcc
 CFLAGS=-Wall -Wextra
 NAME=calculator
@@ -18,10 +18,12 @@ FILE_GRAPH=graph
 build: $(FILE_INTEPRETER) $(FILE_COMPILER) $(FILE_GRAPH)
 
 %.out: $(LEX_GENERATED_C) $(YACC_GENERATED_C) %.c
+	@echo compilingggggggggggggggg
 	$(CC) $(CFLAGS) -o $@ $^
+	@echo compilingggggdddddddddddddddddddd
 
 $(LEX_GENERATED_C): $(LEX_FILE)
-	$(LEX) -v -o $@ $^
+	$(LEX) -v -o"$@" $^
 
 $(YACC_GENERATED_C): $(YACC_FILE)
 	$(YACC) -v -d -o $@ $^
@@ -37,4 +39,4 @@ all: build
 .PHONY: clean all
 
 clean:
-	rm -f *.out *.out.exe $(LEX_GENERATED_C) $(YACC_GENERATED)* $(YACC_GENERATED_NO_TAB).output
+	del *.out *.out.exe $(LEX_GENERATED_C) $(YACC_GENERATED)* $(YACC_GENERATED_NO_TAB).output
