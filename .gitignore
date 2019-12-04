@@ -1,9 +1,9 @@
 # Lex generated files
-*lex.yy.c
+*lex.yy.c*
 
 # Yacc generated files
-y.tab.c
-y.tab.h
+y.tab.c*
+y.tab.h*
 y.output
 
 # GCC generated files
