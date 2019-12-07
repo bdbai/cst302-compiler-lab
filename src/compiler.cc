@@ -71,6 +71,49 @@ void exBin(const operatorNode &opr) {
     }
 }
 
+void exWhile(const operatorNode &p) {
+    const auto checkLabel = ++label, loopLabel = ++label;
+    const auto &[condNode, bodyNode] =
+        get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
+            p.operands.value());
+    ilbuf << "\tbr.s LABEL" << checkLabel << endl;
+    ilbuf << "\tLABEL" << loopLabel << ": ";
+    ex(*bodyNode);
+    ilbuf << "\tLABEL" << checkLabel << ": ";
+    ex(*condNode);
+    ilbuf << "\tbrtrue.s LABEL" << loopLabel << endl;
+}
+void exIf(const operatorNode &p) {
+    visit(
+        overloaded{
+            [](const unique_ptr<nodeType> &_body) {
+                cerr << "if statement has no operands" << endl;
+                abort();
+            },
+            [](const pair<unique_ptr<nodeType>, unique_ptr<nodeType>> &ifBody) {
+                const auto &[condNodePtr, bodyNodePtr] = ifBody;
+                const auto falseLabel = ++label;
+                ex(*condNodePtr);
+                ilbuf << "\tbrfalse.s LABEL" << falseLabel << endl;
+                ex(*bodyNodePtr);
+                ilbuf << "\tLABEL" << falseLabel << ": ";
+            },
+            [](const tuple<unique_ptr<nodeType>, unique_ptr<nodeType>,
+                           unique_ptr<nodeType>> &ifElseBody) {
+                const auto &[condNodePtr, bodyNodePtr, elseNodePtr] =
+                    ifElseBody;
+                const auto falseLabel = ++label, nextLabel = ++label;
+                ex(*condNodePtr);
+                ilbuf << "\tbrfalse.s LABEL" << falseLabel << endl;
+                ex(*bodyNodePtr);
+                ilbuf << "\tbr.s LABEL" << nextLabel << endl;
+                ilbuf << "\tLABEL" << falseLabel << ": ";
+                ex(*elseNodePtr);
+                ilbuf << "\tLABEL" << nextLabel << ": ";
+            }},
+        p.operands.value());
+}
+
 void ex(const nodeType &p) {
     visit(
         overloaded{
@@ -78,7 +121,7 @@ void ex(const nodeType &p) {
                 visit(overloaded{[](int value) {
                                      ilbuf << "\tldc.i4 " << value << endl;
                                  },
-                                 [](double value) {
+                                 [](double _value) {
                                      cerr << "Double is not implemented"
                                           << endl;
                                      abort();
@@ -89,9 +132,10 @@ void ex(const nodeType &p) {
             [](const operatorNode &oprNode) {
                 switch (oprNode.operatorToken) {
                 case token::WHILE:
+                    exWhile(oprNode);
+                    break;
                 case token::IF:
-                    cerr << "if while is not implemented" << endl;
-                    abort();
+                    exIf(oprNode);
                     break;
                 case '=':
                     exAssign(oprNode);
