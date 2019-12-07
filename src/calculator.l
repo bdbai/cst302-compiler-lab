@@ -19,6 +19,9 @@ void yyerror(const string &);
 [_a-zA-Z][_a-zA-Z0-9]*  return yy::parser::make_VARIABLE(string(yytext));
 0                       return yy::parser::make_INTEGER(atoi(yytext));
 [1-9][0-9]*             return yy::parser::make_INTEGER(atoi(yytext));
+-?(0|[1-9][[:digit:]]*)\.([[:digit:]]*)?([eE][-+]?\d*)? {
+                        return yy::parser::make_DECIMAL(stod(yytext));
+}
 "/*"                    {
                             int c;
                             for ( ; ; ) {

@@ -29,20 +29,54 @@ void after_processing() {
     cout << "\tret" << endl << "}" << endl;
 }
 
+void convertType(const string &typeFrom, const string &typeTo) {
+    if (typeFrom == typeTo) {
+        return;
+    }
+    if (typeFrom == "int32" && typeTo == "float64") {
+        ilbuf << "\tconv.r8" << endl;
+    } else if (typeFrom == "int32" && typeTo == "float64") {
+        ilbuf << "\tconv.i4" << endl;
+    } else {
+        cerr << "Cannot convert " << typeFrom << " to " << typeTo << endl;
+        abort();
+    }
+}
+void convertType(const string &typeFrom, const ExpectedType expecting) {
+    switch (expecting) {
+    case ExpectedType::Decimal:
+        convertType(typeFrom, "float64");
+        break;
+    case ExpectedType::Integer:
+        convertType(typeFrom, "int32");
+        break;
+    case ExpectedType::None:
+        // Do nothing
+        break;
+    }
+}
+
 void exAssign(const operatorNode &opr) {
     const auto &[id_ptr, expr_ptr] =
         get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
             opr.operands.value());
     const auto &id = *id_ptr;
-    const auto &expr = *expr_ptr;
+    auto &expr = *expr_ptr;
     const auto &variableNode = get<symbolNode>(id.innerNode);
-    ex(expr);
+    const auto &type = expr.inferType();
+    auto ctx = Context();
+    if (type == "int32") {
+        ctx.expecting = ExpectedType::Integer;
+    } else if (type == "float64") {
+        ctx.expecting = ExpectedType::Decimal;
+    }
+    ex(expr, ctx);
     if (symbols.find(variableNode.symbol) == symbols.end()) {
         // Declare a new variable
         symbol sym;
         sym.literal = variableNode.symbol;
         sym.ilid = symbols.size();
-        sym.type = "int32"; // TODO: type inference
+        sym.type = type;
         symbols[variableNode.symbol] = sym;
     }
     const auto &sym = symbols[variableNode.symbol];
@@ -55,11 +89,15 @@ void exBin(const operatorNode &opr) {
         cerr << "Cannot find opr" << endl;
         abort();
     }
-    const auto &[opr1, opr2] =
-        get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
-            opr.operands.value());
+    auto &[opr1, opr2] = get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
+        opr.operands.value());
+    const auto &type1 = opr1->inferType();
+    const auto &type2 = opr2->inferType();
+    const auto commonType = getTypeCommon(type1, type2);
     ex(*opr1);
+    convertType(type1, commonType);
     ex(*opr2);
+    convertType(type2, commonType);
     ilbuf << '\t' << tokenToOperator.at(opr.operatorToken) << endl;
     // Negate negative operators
     switch (opr.operatorToken) {
@@ -90,8 +128,8 @@ void exWhile(const operatorNode &p) {
 void exIf(const operatorNode &p) {
     visit(
         overloaded{
-            [](const unique_ptr<nodeType> &_body) {
-                cerr << "if statement has no operands" << endl;
+            [](const unique_ptr<nodeType> &) {
+                cerr << "if statement has only 1 operand" << endl;
                 abort();
             },
             [](const pair<unique_ptr<nodeType>, unique_ptr<nodeType>> &ifBody) {
@@ -119,25 +157,34 @@ void exIf(const operatorNode &p) {
             }},
         p.operands.value());
 }
+void exPrint(const operatorNode &p) {
+    auto &oprNode = *get<unique_ptr<nodeType>>(p.operands.value());
+    const auto &type = oprNode.inferType();
+    ex(oprNode);
+    ilbuf << "\tcall void "
+             "[System.Console]System.Console::"
+             "WriteLine("
+          << type << ")" << endl;
+    currentStack--;
+}
 
-void ex(const nodeType &p) {
+void ex(nodeType &p) { ex(p, {}); }
+
+void ex(nodeType &p, Context ctx) {
     visit(
         overloaded{
-            [](const constantNode &conNode) {
+            [](constantNode &conNode) {
                 visit(overloaded{[](int value) {
                                      ilbuf << "\tldc.i4 " << value << endl;
-                                     currentStack++;
-                                     maxStack = max(maxStack, currentStack);
                                  },
-                                 [](double _value) {
-                                     cerr << "Double is not implemented"
-                                          << endl;
-                                     abort();
-                                     // TODO: double
+                                 [](double value) {
+                                     ilbuf << "\tldc.r8 " << value << endl;
                                  }},
                       conNode.innerValue);
+                currentStack++;
+                maxStack = max(maxStack, currentStack);
             },
-            [](const operatorNode &oprNode) {
+            [](operatorNode &oprNode) {
                 switch (oprNode.operatorToken) {
                 case token::WHILE:
                     exWhile(oprNode);
@@ -149,13 +196,11 @@ void ex(const nodeType &p) {
                     exAssign(oprNode);
                     break;
                 case token::PRINT:
+                    exPrint(oprNode);
+                    break;
+                case token::UMINUS:
                     ex(*get<unique_ptr<nodeType>>(oprNode.operands.value()));
-                    ilbuf << "\tcall void "
-                             "[System.Console]System.Console::"
-                             "WriteLine(int32)"
-                          << endl;
-                    currentStack--;
-                    // TODO: type checking
+                    ilbuf << "\tneg" << endl;
                     break;
                 default:
                     // Deal with binary operators
@@ -163,7 +208,7 @@ void ex(const nodeType &p) {
                     break;
                 }
             },
-            [](const symbolNode &symNode) {
+            [](symbolNode &symNode) {
                 if (symbols.find(symNode.symbol) == symbols.end()) {
                     cerr << "Undefined variable: " << symNode.symbol << endl;
                     abort();
@@ -174,11 +219,12 @@ void ex(const nodeType &p) {
                 currentStack++;
                 maxStack = max(maxStack, currentStack);
             },
-            [](const vector<unique_ptr<nodeType>> &nodes) {
+            [](vector<unique_ptr<nodeType>> &nodes) {
                 for (const auto &node : nodes) {
                     ex(*node);
                 }
             },
-            [](auto &rest) { abort(); }},
+            [](auto &) { abort(); }},
         p.innerNode);
+    convertType(p.inferType(), ctx.expecting);
 }

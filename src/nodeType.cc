@@ -1,5 +1,7 @@
 #include "nodeType.h"
 
+map<string, symbol> symbols;
+
 bool symbolNode::operator==(const symbolNode &other) const {
     return this->symbol == other.symbol;
 }
@@ -8,10 +10,10 @@ bool symbolNode::operator<(const symbolNode &other) const {
 }
 
 unique_ptr<nodeType> nodeType::make_constant(int con) {
-    return make_unique<nodeType>(constantNode(con));
+    return make_unique<nodeType>(constantNode(con), "int32");
 }
 unique_ptr<nodeType> nodeType::make_constant(double con) {
-    return make_unique<nodeType>(constantNode(con));
+    return make_unique<nodeType>(constantNode(con), "float64");
 }
 unique_ptr<nodeType> nodeType::make_symbol(string sym) {
     return make_unique<nodeType>(symbolNode(sym));
@@ -55,4 +57,66 @@ unique_ptr<nodeType> nodeType::make_ops(unique_ptr<nodeType> op) {
 }
 void nodeType::push_op(unique_ptr<nodeType> op) {
     get<vector<unique_ptr<nodeType>>>(this->innerNode).push_back(move(op));
+}
+void nodeType::setType(const string &type) { this->type = type; }
+const string getTypeCommon(const string &type1, const string &type2) {
+    if (type1 == type2) {
+        return type1;
+    }
+    if ((type1 == "int32" && type2 == "float64") ||
+        (type1 == "float64" && type2 == "int32")) {
+        return "float64";
+    }
+    cerr << "Cannot get common type of " << type1 << " and " << type2 << endl;
+    abort();
+}
+const string nodeType::inferType() {
+    if (this->type.has_value()) {
+        return this->type.value();
+    }
+    const auto result = visit(
+        overloaded{
+            [](const constantNode &) -> const string {
+                cerr << "Cannot infer type of constant node" << endl;
+                abort();
+            },
+            [](operatorNode &oprNode) -> const string {
+                if (!oprNode.operands.has_value()) {
+                    return "!";
+                }
+                return visit(
+                    overloaded{
+                        [](unique_ptr<nodeType> &opr) -> const string {
+                            return opr->inferType();
+                        },
+                        [](pair<unique_ptr<nodeType>, unique_ptr<nodeType>>
+                               &opr) -> const string {
+                            return getTypeCommon(opr.first->inferType(),
+                                                 opr.second->inferType());
+                        },
+                        [](tuple<unique_ptr<nodeType>, unique_ptr<nodeType>,
+                                 unique_ptr<nodeType>> &opr) -> const string {
+                            const auto &[opr1, opr2, opr3] = opr;
+                            return getTypeCommon(
+                                getTypeCommon(opr1->inferType(),
+                                              opr2->inferType()),
+                                opr3->inferType());
+                        },
+                    },
+                    oprNode.operands.value());
+            },
+            [](const symbolNode &symNode) -> const string {
+                if (symbols.find(symNode.symbol) == symbols.end()) {
+                    cerr << "Cannot infer type of non-existing symbol "
+                         << symNode.symbol << endl;
+                    abort();
+                }
+                return symbols.at(symNode.symbol).type;
+            },
+            [](const vector<unique_ptr<nodeType>> &) -> const string {
+                return "!";
+            }},
+        this->innerNode);
+    this->type = result;
+    return result;
 }

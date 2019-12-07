@@ -5,8 +5,13 @@
 #include <tuple>
 #include <optional>
 #include <vector>
+#include <iostream>
+#include <map>
 
 using namespace std;
+
+template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template <class... Ts> overloaded(Ts...)->overloaded<Ts...>;
 
 class symbol {
   public:
@@ -15,6 +20,8 @@ class symbol {
     string type;
     optional<variant<int32_t, double>> value;
 };
+
+extern map<string, symbol> symbols;
 
 class constantNode {
   public:
@@ -46,8 +53,12 @@ class operatorNode {
 };
 
 class nodeType {
+  private:
+    optional<string> type;
+
   public:
-    nodeType(constantNode con) : innerNode(con) {}
+    nodeType(constantNode con, const string &type)
+        : type(type), innerNode(con) {}
     nodeType(operatorNode op) : innerNode(move(op)) {}
     nodeType(symbolNode sym) : innerNode(sym) {}
     nodeType(vector<unique_ptr<nodeType>> nodes) : innerNode(move(nodes)) {}
@@ -67,6 +78,10 @@ class nodeType {
     static unique_ptr<nodeType> make_ops();
     static unique_ptr<nodeType> make_ops(unique_ptr<nodeType> op);
     void push_op(unique_ptr<nodeType> op);
+    const string inferType();
+    void setType(const string &type);
 };
+
+const string getTypeCommon(const string &type1, const string &type2);
 
 #endif

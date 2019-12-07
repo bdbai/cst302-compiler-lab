@@ -30,12 +30,13 @@ yy::parser::symbol_type yylex() {
 
 /* prototypes */
 void before_processing();
-int ex(const nodeType &p);
+int ex(nodeType &p);
 void after_processing();
 void yyerror(char *s);
 %}
 
 %token <int32_t> INTEGER
+%token <double> DECIMAL
 %token <string> VARIABLE
 %token WHILE IF PRINT
 %nonassoc IFX
@@ -81,6 +82,7 @@ stmt_list:
 
 expr:
           INTEGER               { $$ = nodeType::make_constant($1); }
+        | DECIMAL               { $$ = nodeType::make_constant($1); }
         | VARIABLE              { $$ = nodeType::make_symbol($1); }
         | '-' expr %prec UMINUS { $$ = nodeType::make_op(token::UMINUS, move($2)); }
         | expr '+' expr         { $$ = nodeType::make_op('+', move($1), move($3)); }
