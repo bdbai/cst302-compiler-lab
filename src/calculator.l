@@ -12,20 +12,20 @@ void yyerror(const string &);
 %}
 
 %%
-[a-z]           return yy::parser::make_VARIABLE(string(yytext));
-0               return yy::parser::make_INTEGER(atoi(yytext));
-[1-9][0-9]*     return yy::parser::make_INTEGER(atoi(yytext));
-[-()<>=+*/;{}.] return *yytext;
-">="            return yy::parser::token::GE;
-"<="            return yy::parser::token::LE;
-"=="            return yy::parser::token::EQ;
-"!="            return yy::parser::token::NE;
-"while"         return yy::parser::token::WHILE;
-"if"            return yy::parser::token::IF;
-"else"          return yy::parser::token::ELSE;
-"print"         return yy::parser::token::PRINT;
-[ \t\n]+        ;       /* ignore whitespace */
-.               yyerror(string("Unknown character"));
+"while"                 return yy::parser::token::WHILE;
+"if"                    return yy::parser::token::IF;
+"else"                  return yy::parser::token::ELSE;
+"print"                 return yy::parser::token::PRINT;
+[_a-zA-Z][_a-zA-Z0-9]*  return yy::parser::make_VARIABLE(string(yytext));
+0                       return yy::parser::make_INTEGER(atoi(yytext));
+[1-9][0-9]*             return yy::parser::make_INTEGER(atoi(yytext));
+[-()<>=+*/;{}.]         return *yytext;
+">="                    return yy::parser::token::GE;
+"<="                    return yy::parser::token::LE;
+"=="                    return yy::parser::token::EQ;
+"!="                    return yy::parser::token::NE;
+[ \t\n]+                ;       /* ignore whitespace */
+.                       yyerror(string("Unknown character"));
 %%
 
 int yywrap(void) {
