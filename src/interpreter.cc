@@ -11,6 +11,7 @@ void exAssign(const operatorNode &opr) {
     const auto &id = *id_ptr;
     const auto &expr = *expr_ptr;
     const auto &variableNode = get<symbolNode>(id.innerNode);
+    const auto value = interpret(expr);
     if (symbols.find(variableNode.symbol) == symbols.end()) {
         // Declare a new variable
         symbol sym;
@@ -20,7 +21,7 @@ void exAssign(const operatorNode &opr) {
         symbols[variableNode.symbol] = sym;
     }
     auto &sym = symbols[variableNode.symbol];
-    sym.value = interpret(expr);
+    sym.value = value;
 }
 
 template <typename T>

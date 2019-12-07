@@ -36,6 +36,7 @@ void exAssign(const operatorNode &opr) {
     const auto &id = *id_ptr;
     const auto &expr = *expr_ptr;
     const auto &variableNode = get<symbolNode>(id.innerNode);
+    ex(expr);
     if (symbols.find(variableNode.symbol) == symbols.end()) {
         // Declare a new variable
         symbol sym;
@@ -45,7 +46,6 @@ void exAssign(const operatorNode &opr) {
         symbols[variableNode.symbol] = sym;
     }
     const auto &sym = symbols[variableNode.symbol];
-    ex(expr);
     ilbuf << "\tstloc " << sym.ilid << endl;
     currentStack--;
 }
