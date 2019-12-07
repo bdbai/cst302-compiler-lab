@@ -45,3 +45,14 @@ unique_ptr<nodeType> nodeType::make_op(int opr, unique_ptr<nodeType> arg1,
             move(arg1), move(arg2), move(arg3));
     return make_unique<nodeType>(move(oprNode));
 }
+unique_ptr<nodeType> nodeType::make_ops() {
+    return make_unique<nodeType>(vector<unique_ptr<nodeType>>());
+}
+unique_ptr<nodeType> nodeType::make_ops(unique_ptr<nodeType> op) {
+    vector<unique_ptr<nodeType>> nodes;
+    nodes.push_back(move(op));
+    return make_unique<nodeType>(move(nodes));
+}
+void nodeType::push_op(unique_ptr<nodeType> op) {
+    get<vector<unique_ptr<nodeType>>>(this->innerNode).push_back(move(op));
+}

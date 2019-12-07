@@ -4,6 +4,7 @@
 #include <memory>
 #include <tuple>
 #include <optional>
+#include <vector>
 
 using namespace std;
 
@@ -12,13 +13,14 @@ class symbol {
     string literal;
     int ilid;
     string type;
+    optional<variant<int32_t, double>> value;
 };
 
 class constantNode {
   public:
     constantNode(int32_t con) : innerValue(con) {}
     constantNode(double con) : innerValue(con) {}
-    std::variant<int32_t, double> innerValue;
+    variant<int32_t, double> innerValue;
 };
 
 class symbolNode {
@@ -48,7 +50,10 @@ class nodeType {
     nodeType(constantNode con) : innerNode(con) {}
     nodeType(operatorNode op) : innerNode(move(op)) {}
     nodeType(symbolNode sym) : innerNode(sym) {}
-    variant<constantNode, operatorNode, symbolNode> innerNode;
+    nodeType(vector<unique_ptr<nodeType>> nodes) : innerNode(move(nodes)) {}
+    variant<constantNode, operatorNode, symbolNode,
+            vector<unique_ptr<nodeType>>>
+        innerNode;
     static unique_ptr<nodeType> make_constant(int32_t con);
     static unique_ptr<nodeType> make_constant(double con);
     static unique_ptr<nodeType> make_symbol(string sym);
@@ -59,6 +64,9 @@ class nodeType {
     static unique_ptr<nodeType> make_op(int opr, unique_ptr<nodeType> arg1,
                                         unique_ptr<nodeType> arg2,
                                         unique_ptr<nodeType> arg3);
+    static unique_ptr<nodeType> make_ops();
+    static unique_ptr<nodeType> make_ops(unique_ptr<nodeType> op);
+    void push_op(unique_ptr<nodeType> op);
 };
 
 #endif

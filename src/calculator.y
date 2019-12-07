@@ -7,6 +7,7 @@
 %token END_OF_FILE 0
 %code requires {
     #include <memory>
+    #include <vector>
     using namespace std;
     #include "nodeType.h"
 }
@@ -63,7 +64,7 @@ function:
         ;
 
 stmt:
-          ';'                            { /*$$ = opr2(';', NULL, NULL);*/ }
+          ';'                            { $$ = nodeType::make_ops(); }
         | expr ';'                       { $$ = move($1); }
         | PRINT expr ';'                 { $$ = nodeType::make_op(token::PRINT, move($2)); }
         | VARIABLE '=' expr ';'          { $$ = nodeType::make_op('=', move(nodeType::make_symbol($1)), move($3)); }
@@ -74,8 +75,8 @@ stmt:
         ;
 
 stmt_list:
-          stmt                  { $$ = move($1); }
-        | stmt_list stmt        { /*$$ = opr2(';', 2, $1, $2);*/ }
+          stmt                  { $$ = move(nodeType::make_ops(move($1))); }
+        | stmt_list stmt        { $1->push_op(move($2)); $$ = move($1); }
         ;
 
 expr:
