@@ -3,9 +3,7 @@
 void before_processing() {
     cout << ".assembly calculator {} " << endl
          << ".method public hidebysig static void Main () cil managed " << endl
-         << "{" << endl
-         << "\t.maxstack 8" << endl // TODO: max stack check
-         << "\t.entrypoint" << endl;
+         << "{" << endl;
 }
 
 void after_processing() {
@@ -24,7 +22,9 @@ void after_processing() {
         cout << endl << "\t)" << endl;
     }
     // Print buffered CIL code
-    cout << ilbuf.str();
+    cout << "\t.maxstack " << maxStack << endl
+         << "\t.entrypoint" << endl
+         << ilbuf.str();
     // Print tail
     cout << "\tret" << endl << "}" << endl;
 }
@@ -47,6 +47,7 @@ void exAssign(const operatorNode &opr) {
     const auto &sym = symbols[variableNode.symbol];
     ex(expr);
     ilbuf << "\tstloc " << sym.ilid << endl;
+    currentStack--;
 }
 
 void exBin(const operatorNode &opr) {
@@ -67,6 +68,7 @@ void exBin(const operatorNode &opr) {
     case token::NE:
         ilbuf << "\tldc.i4.0" << endl;
         ilbuf << "\tceq" << endl;
+        maxStack = max(maxStack, currentStack + 1);
         break;
     }
 }
@@ -82,7 +84,9 @@ void exWhile(const operatorNode &p) {
     ilbuf << "\tLABEL" << checkLabel << ": ";
     ex(*condNode);
     ilbuf << "\tbrtrue.s LABEL" << loopLabel << endl;
+    currentStack--;
 }
+
 void exIf(const operatorNode &p) {
     visit(
         overloaded{
@@ -95,6 +99,7 @@ void exIf(const operatorNode &p) {
                 const auto falseLabel = ++label;
                 ex(*condNodePtr);
                 ilbuf << "\tbrfalse.s LABEL" << falseLabel << endl;
+                currentStack--;
                 ex(*bodyNodePtr);
                 ilbuf << "\tLABEL" << falseLabel << ": ";
             },
@@ -105,6 +110,7 @@ void exIf(const operatorNode &p) {
                 const auto falseLabel = ++label, nextLabel = ++label;
                 ex(*condNodePtr);
                 ilbuf << "\tbrfalse.s LABEL" << falseLabel << endl;
+                currentStack--;
                 ex(*bodyNodePtr);
                 ilbuf << "\tbr.s LABEL" << nextLabel << endl;
                 ilbuf << "\tLABEL" << falseLabel << ": ";
@@ -120,6 +126,8 @@ void ex(const nodeType &p) {
             [](const constantNode &conNode) {
                 visit(overloaded{[](int value) {
                                      ilbuf << "\tldc.i4 " << value << endl;
+                                     currentStack++;
+                                     maxStack = max(maxStack, currentStack);
                                  },
                                  [](double _value) {
                                      cerr << "Double is not implemented"
@@ -146,6 +154,7 @@ void ex(const nodeType &p) {
                              "[System.Console]System.Console::"
                              "WriteLine(int32)"
                           << endl;
+                    currentStack--;
                     // TODO: type checking
                     break;
                 default:
@@ -162,6 +171,8 @@ void ex(const nodeType &p) {
                 }
                 const auto &sym = symbols[symNode.symbol];
                 ilbuf << "\tldloc " << sym.ilid << endl;
+                currentStack++;
+                maxStack = max(maxStack, currentStack);
             },
             [](const vector<unique_ptr<nodeType>> &nodes) {
                 for (const auto &node : nodes) {

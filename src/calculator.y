@@ -99,7 +99,7 @@ expr:
 %%
 
 void yyerror(const string &s) {
-    fprintf(stdout, "%s\n", s);
+    cerr << s << endl;
 }
 
 int main(void) {
@@ -111,5 +111,5 @@ int main(void) {
 }
 
 void yy::parser::error(const string& message) {
-  cout << message << endl;
+  cerr << message << endl;
 }
