@@ -38,7 +38,7 @@ void exNode(const nodeType &p, int c, int l, int *ce, int *cm);
 void before_processing() {}
 void after_processing() {}
 /* main entry point of the manipulation of the syntax tree */
-void ex(const nodeType &p) {
+void ex(nodeType &p) {
     int rte, rtm;
 
     graphInit();

@@ -9,16 +9,24 @@ void exAssign(const operatorNode &opr) {
         get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
             opr.operands.value());
     const auto &id = *id_ptr;
-    const auto &expr = *expr_ptr;
+    auto &expr = *expr_ptr;
     const auto &variableNode = get<symbolNode>(id.innerNode);
     const auto value = interpret(expr);
-    if (symbols.find(variableNode.symbol) == symbols.end()) {
+    const auto symbolIt = symbols.find(variableNode.symbol);
+    if (symbolIt == symbols.end()) {
         // Declare a new variable
         symbol sym;
         sym.literal = variableNode.symbol;
         sym.ilid = symbols.size();
-        sym.type = "int32"; // TODO: type inference
+        // The `type` field is not used in interpreter since variant is used to
+        // check types
+        sym.type = "int32";
         symbols[variableNode.symbol] = sym;
+    } else {
+        if (value.value().index() != symbolIt->second.value.value().index()) {
+            cerr << "Type mismatch" << endl;
+            abort();
+        }
     }
     auto &sym = symbols[variableNode.symbol];
     sym.value = value;
@@ -54,6 +62,13 @@ T interpretBinOpr(int operatorToken, const T opr1, const T opr2) {
     }
 }
 
+double variantToDouble(const variant<int32_t, double> &v) {
+    return visit(
+        overloaded{[](const int32_t val) -> double { return (double)val; },
+                   [](const double val) -> double { return val; }},
+        v);
+}
+
 variant<int32_t, double> exBin(const operatorNode &opr) {
     if (tokenToOperator.find(opr.operatorToken) == tokenToOperator.end()) {
         cerr << "Cannot find opr" << endl;
@@ -64,20 +79,23 @@ variant<int32_t, double> exBin(const operatorNode &opr) {
             opr.operands.value());
     const auto opr1 = interpret(*oprNode1).value();
     const auto opr2 = interpret(*oprNode2).value();
-    if (opr1.index() != opr2.index()) {
-        cerr << "Type mismatch" << endl;
-        abort();
-    }
-    if (holds_alternative<double>(opr1) && holds_alternative<double>(opr2)) {
-        return interpretBinOpr(opr.operatorToken, get<double>(opr1),
-                               get<double>(opr2));
-    } else {
+    if (holds_alternative<int32_t>(opr1) && holds_alternative<int32_t>(opr2)) {
         return interpretBinOpr(opr.operatorToken, get<int32_t>(opr1),
                                get<int32_t>(opr2));
+    } else if (holds_alternative<double>(opr1) ||
+               holds_alternative<double>(opr2))
+
+    {
+        return interpretBinOpr(opr.operatorToken, variantToDouble(opr1),
+                               variantToDouble(opr2));
+    } else {
+        // TODO: other types
+        cerr << "Cannot perform operations because of unknown types" << endl;
+        abort();
     }
 }
 
-void ex(const nodeType &p) { interpret(p); }
+void ex(nodeType &p) { interpret(p); }
 
 variant<int32_t, double> interpretUminus(const operatorNode &p) {
     const auto &oprand =
@@ -99,7 +117,7 @@ void interpretWhile(const operatorNode &p) {
 void interpretIf(const operatorNode &p) {
     visit(
         overloaded{
-            [](const unique_ptr<nodeType> &body) {
+            [](const unique_ptr<nodeType> &) {
                 cerr << "if statement has no operands" << endl;
                 abort();
             },
@@ -129,57 +147,54 @@ void interpretPrint(const operatorNode &p) {
           oprand);
 }
 
-optional<variant<int32_t, double>> interpret(const nodeType &p) {
+optional<variant<int32_t, double>> interpret(nodeType &p) {
     return visit(
-        overloaded{[](const constantNode &conNode)
-                       -> optional<variant<int32_t, double>> {
-                       return conNode.innerValue;
-                   },
-                   [](const operatorNode &oprNode)
-                       -> optional<variant<int32_t, double>> {
-                       switch (oprNode.operatorToken) {
-                       case token::WHILE:
-                           interpretWhile(oprNode);
-                           break;
-                       case token::IF:
-                           interpretIf(oprNode);
-                           break;
-                       case token::UMINUS:
-                           return interpretUminus(oprNode);
-                       case '=':
-                           exAssign(oprNode);
-                           break;
-                       case token::PRINT:
-                           interpretPrint(oprNode);
-                           // TODO: other types
-                           break;
-                       default:
-                           // Deal with binary operators
-                           return exBin(oprNode);
-                       }
-                       return {};
-                   },
-                   [](const symbolNode &symNode)
-                       -> optional<variant<int32_t, double>> {
-                       if (symbols.find(symNode.symbol) == symbols.end()) {
-                           cerr << "Undefined variable: " << symNode.symbol
-                                << endl;
-                           abort();
-                           return {};
-                       }
-                       const auto &sym = symbols[symNode.symbol];
-                       return sym.value;
-                   },
-                   [](const vector<unique_ptr<nodeType>> &nodes)
-                       -> optional<variant<int32_t, double>> {
-                       for (const auto &node : nodes) {
-                           interpret(*node);
-                       }
-                       return {};
-                   },
-                   [](auto &rest) -> optional<variant<int32_t, double>> {
-                       abort();
-                       return {};
-                   }},
+        overloaded{
+            [](constantNode &conNode) -> optional<variant<int32_t, double>> {
+                return conNode.innerValue;
+            },
+            [](operatorNode &oprNode) -> optional<variant<int32_t, double>> {
+                switch (oprNode.operatorToken) {
+                case token::WHILE:
+                    interpretWhile(oprNode);
+                    break;
+                case token::IF:
+                    interpretIf(oprNode);
+                    break;
+                case token::UMINUS:
+                    return interpretUminus(oprNode);
+                case '=':
+                    exAssign(oprNode);
+                    break;
+                case token::PRINT:
+                    interpretPrint(oprNode);
+                    // TODO: other types
+                    break;
+                default:
+                    // Deal with binary operators
+                    return exBin(oprNode);
+                }
+                return {};
+            },
+            [](symbolNode &symNode) -> optional<variant<int32_t, double>> {
+                if (symbols.find(symNode.symbol) == symbols.end()) {
+                    cerr << "Undefined variable: " << symNode.symbol << endl;
+                    abort();
+                    return {};
+                }
+                const auto &sym = symbols[symNode.symbol];
+                return sym.value;
+            },
+            [](vector<unique_ptr<nodeType>> &nodes)
+                -> optional<variant<int32_t, double>> {
+                for (const auto &node : nodes) {
+                    interpret(*node);
+                }
+                return {};
+            },
+            [](auto &rest) -> optional<variant<int32_t, double>> {
+                abort();
+                return {};
+            }},
         p.innerNode);
 }
