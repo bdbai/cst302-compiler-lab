@@ -19,6 +19,20 @@ void yyerror(const string &);
 [_a-zA-Z][_a-zA-Z0-9]*  return yy::parser::make_VARIABLE(string(yytext));
 0                       return yy::parser::make_INTEGER(atoi(yytext));
 [1-9][0-9]*             return yy::parser::make_INTEGER(atoi(yytext));
+"/*"                    {
+                            int c;
+                            for ( ; ; ) {
+                                while ((c = yyinput()) != '*' && c != EOF && c != 0);
+                                if (c == '*') {
+                                    while ((c = yyinput()) == '*');
+                                    if ( c == '/' ) break;
+                                }
+                                if (c == EOF || c == 0) {
+                                    yyerror("EOF in comment");
+                                    break;
+                                }
+                            }
+                        }
 [-()<>=+*/;{}.]         return *yytext;
 ">="                    return yy::parser::token::GE;
 "<="                    return yy::parser::token::LE;
