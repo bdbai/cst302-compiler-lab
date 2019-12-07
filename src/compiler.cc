@@ -65,19 +65,18 @@ void exAssign(const operatorNode &opr) {
     const auto &variableNode = get<symbolNode>(id.innerNode);
     const auto &type = expr.inferType();
     auto ctx = Context();
-    if (type == "int32") {
-        ctx.expecting = ExpectedType::Integer;
-    } else if (type == "float64") {
-        ctx.expecting = ExpectedType::Decimal;
-    }
+    ctx.expecting = Context::typeStringToExpected(type);
     ex(expr, ctx);
-    if (symbols.find(variableNode.symbol) == symbols.end()) {
+    const auto symbolIt = symbols.find(variableNode.symbol);
+    if (symbolIt == symbols.end()) {
         // Declare a new variable
         symbol sym;
         sym.literal = variableNode.symbol;
         sym.ilid = symbols.size();
         sym.type = type;
         symbols[variableNode.symbol] = sym;
+    } else {
+        convertType(type, symbolIt->second.type);
     }
     const auto &sym = symbols[variableNode.symbol];
     ilbuf << "\tstloc " << sym.ilid << endl;
@@ -168,7 +167,10 @@ void exPrint(const operatorNode &p) {
     currentStack--;
 }
 
-void ex(nodeType &p) { ex(p, {}); }
+void ex(nodeType &p) {
+    ex(p, {});
+    // TODO: stack balancing
+}
 
 void ex(nodeType &p, Context ctx) {
     visit(
