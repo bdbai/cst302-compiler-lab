@@ -4,7 +4,7 @@ YACC=yacc
 CC=g++
 CFLAGS=-Wall -Wextra -std=c++17
 NAME=calculator
-SOURCES=nodeType.cc
+SOURCES=nodeType.cc context.cc
 LEX_FILE=$(NAME).l
 YACC_FILE=$(NAME).y
 LEX_GENERATED_C=lex.yy.cc
