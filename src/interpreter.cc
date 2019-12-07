@@ -130,63 +130,55 @@ void interpretPrint(const operatorNode &p) {
 
 optional<variant<int32_t, double>> interpret(const nodeType &p) {
     return visit(
-        overloaded{
-            [](const constantNode &conNode)
-                -> optional<variant<int32_t, double>> {
-                return visit(
-                    overloaded{
-                        [](int value) -> optional<variant<int32_t, double>> {
-                            return value;
-                        },
-                        [](double value) -> optional<variant<int32_t, double>> {
-                            return value;
-                        }},
-                    conNode.innerValue);
-            },
-            [](const operatorNode &oprNode)
-                -> optional<variant<int32_t, double>> {
-                switch (oprNode.operatorToken) {
-                case token::WHILE:
-                    interpretWhile(oprNode);
-                    break;
-                case token::IF:
-                    interpretIf(oprNode);
-                    break;
-                case token::UMINUS:
-                    return interpretUminus(oprNode);
-                case '=':
-                    exAssign(oprNode);
-                    break;
-                case token::PRINT:
-                    interpretPrint(oprNode);
-                    // TODO: other types
-                    break;
-                default:
-                    // Deal with binary operators
-                    return exBin(oprNode);
-                }
-                return {};
-            },
-            [](const symbolNode &symNode)
-                -> optional<variant<int32_t, double>> {
-                if (symbols.find(symNode.symbol) == symbols.end()) {
-                    cerr << "Undefined variable: " << symNode.symbol << endl;
-                    abort();
-                    return {};
-                }
-                const auto &sym = symbols[symNode.symbol];
-                return sym.value;
-            },
-            [](const vector<unique_ptr<nodeType>> &nodes)
-                -> optional<variant<int32_t, double>> {
-                for (const auto &node : nodes) {
-                    interpret(*node);
-                }
-                return {};
-            },
-            [](auto &rest) -> optional<variant<int32_t, double>> {
-                abort();
-                return {};
-            }},
+        overloaded{[](const constantNode &conNode)
+                       -> optional<variant<int32_t, double>> {
+                       return conNode.innerValue;
+                   },
+                   [](const operatorNode &oprNode)
+                       -> optional<variant<int32_t, double>> {
+                       switch (oprNode.operatorToken) {
+                       case token::WHILE:
+                           interpretWhile(oprNode);
+                           break;
+                       case token::IF:
+                           interpretIf(oprNode);
+                           break;
+                       case token::UMINUS:
+                           return interpretUminus(oprNode);
+                       case '=':
+                           exAssign(oprNode);
+                           break;
+                       case token::PRINT:
+                           interpretPrint(oprNode);
+                           // TODO: other types
+                           break;
+                       default:
+                           // Deal with binary operators
+                           return exBin(oprNode);
+                       }
+                       return {};
+                   },
+                   [](const symbolNode &symNode)
+                       -> optional<variant<int32_t, double>> {
+                       if (symbols.find(symNode.symbol) == symbols.end()) {
+                           cerr << "Undefined variable: " << symNode.symbol
+                                << endl;
+                           abort();
+                           return {};
+                       }
+                       const auto &sym = symbols[symNode.symbol];
+                       return sym.value;
+                   },
+                   [](const vector<unique_ptr<nodeType>> &nodes)
+                       -> optional<variant<int32_t, double>> {
+                       for (const auto &node : nodes) {
+                           interpret(*node);
+                       }
+                       return {};
+                   },
+                   [](auto &rest) -> optional<variant<int32_t, double>> {
+                       abort();
+                       return {};
+                   }},
         p.innerNode);
 }

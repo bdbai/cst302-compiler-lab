@@ -44,7 +44,7 @@ void yyerror(char *s);
 %left GE LE EQ NE '>' '<'
 %left '+' '-'
 %left '*' '/'
-%right '='
+%nonassoc '='
 %nonassoc UMINUS
 
 %type <unique_ptr<nodeType>> stmt expr stmt_list
