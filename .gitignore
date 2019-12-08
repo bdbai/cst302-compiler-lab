@@ -2,6 +2,7 @@
 *lex.yy.c*
 
 # Yacc generated files
+stack.hh
 y.tab.c*
 y.tab.h*
 y.output
