@@ -228,5 +228,7 @@ void ex(nodeType &p, Context ctx) {
             },
             [](auto &) { abort(); }},
         p.innerNode);
-    convertType(p.inferType(), ctx.expecting);
+    if (ctx.expecting != ExpectedType::None) {
+        convertType(p.inferType(), ctx.expecting);
+    }
 }
