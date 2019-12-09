@@ -43,6 +43,8 @@ T interpretBinOpr(int operatorToken, const T opr1, const T opr2) {
         return opr1 * opr2;
     case '/':
         return opr1 / opr2;
+    case '%':
+        return fmod(opr1, opr2);
     case '<':
         return opr1 < opr2;
     case token::GE:
