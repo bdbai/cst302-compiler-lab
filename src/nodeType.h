@@ -77,6 +77,8 @@ class nodeType {
                                         unique_ptr<nodeType> arg3);
     static unique_ptr<nodeType> make_ops();
     static unique_ptr<nodeType> make_ops(unique_ptr<nodeType> op);
+    static unique_ptr<nodeType> make_opas(int opr, const string symbol,
+                                          unique_ptr<nodeType> arg);
     void push_op(unique_ptr<nodeType> op);
     const string inferType();
     void setType(const string &type);

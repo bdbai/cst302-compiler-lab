@@ -42,11 +42,11 @@ void yyerror(char *s);
 %nonassoc IFX
 %nonassoc ELSE
 
+%nonassoc '=' ADDAS MINAS MULAS DIVAS REMAS SHLAS SHRAS
 %left GE LE EQ NE '>' '<'
 %left SHL SHR
 %left '+' '-'
 %left '*' '/' '%'
-%nonassoc '='
 %nonassoc UMINUS
 
 %type <unique_ptr<nodeType>> stmt expr stmt_list
@@ -70,6 +70,13 @@ stmt:
         | expr ';'                       { $$ = move($1); }
         | PRINT expr ';'                 { $$ = nodeType::make_op(token::PRINT, move($2)); }
         | VARIABLE '=' expr ';'          { $$ = nodeType::make_op('=', move(nodeType::make_symbol($1)), move($3)); }
+        | VARIABLE ADDAS expr ';'        { $$ = nodeType::make_opas('+', $1, move($3)); }
+        | VARIABLE MINAS expr ';'        { $$ = nodeType::make_opas('-', $1, move($3)); }
+        | VARIABLE MULAS expr ';'        { $$ = nodeType::make_opas('*', $1, move($3)); }
+        | VARIABLE DIVAS expr ';'        { $$ = nodeType::make_opas('/', $1, move($3)); }
+        | VARIABLE REMAS expr ';'        { $$ = nodeType::make_opas('%', $1, move($3)); }
+        | VARIABLE SHLAS expr ';'        { $$ = nodeType::make_opas(token::SHL, $1, move($3)); }
+        | VARIABLE SHRAS expr ';'        { $$ = nodeType::make_opas(token::SHR, $1, move($3)); }
         | WHILE '(' expr ')' stmt        { $$ = nodeType::make_op(token::WHILE, move($3), move($5)); }
         | IF '(' expr ')' stmt %prec IFX { $$ = nodeType::make_op(token::IF, move($3), move($5)); }
         | IF '(' expr ')' stmt ELSE stmt { $$ = nodeType::make_op(token::IF, move($3), move($5), move($7)); }

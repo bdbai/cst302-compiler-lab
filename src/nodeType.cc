@@ -55,6 +55,13 @@ unique_ptr<nodeType> nodeType::make_ops(unique_ptr<nodeType> op) {
     nodes.push_back(move(op));
     return make_unique<nodeType>(move(nodes));
 }
+unique_ptr<nodeType> nodeType::make_opas(int opr, const string symbol,
+                                         unique_ptr<nodeType> arg) {
+    return move(
+        nodeType::make_op('=', move(nodeType::make_symbol(symbol)),
+                          move(nodeType::make_op(
+                              opr, nodeType::make_symbol(symbol), move(arg)))));
+}
 void nodeType::push_op(unique_ptr<nodeType> op) {
     get<vector<unique_ptr<nodeType>>>(this->innerNode).push_back(move(op));
 }

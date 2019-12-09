@@ -43,6 +43,13 @@ void yyerror(const string &);
 "<="                    return yy::parser::token::LE;
 "=="                    return yy::parser::token::EQ;
 "!="                    return yy::parser::token::NE;
+"+="                    return yy::parser::token::ADDAS;
+"-="                    return yy::parser::token::MINAS;
+"*="                    return yy::parser::token::MULAS;
+"/="                    return yy::parser::token::DIVAS;
+"%="                    return yy::parser::token::REMAS;
+"<<="                   return yy::parser::token::SHLAS;
+">>="                   return yy::parser::token::SHRAS;
 [ \t\r\n]+              ;       /* ignore whitespace */
 \/\/.*$                 ;       /* ignore line comment */
 .                       yyerror(string("Unknown character"));
