@@ -35,7 +35,7 @@ void convertType(const string &typeFrom, const string &typeTo) {
     }
     if (typeFrom == "int32" && typeTo == "float64") {
         ilbuf << "\tconv.r8" << endl;
-    } else if (typeFrom == "int32" && typeTo == "float64") {
+    } else if (typeFrom == "float64" && typeTo == "int32") {
         ilbuf << "\tconv.i4" << endl;
     } else {
         cerr << "Cannot convert " << typeFrom << " to " << typeTo << endl;
