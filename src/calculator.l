@@ -41,7 +41,7 @@ void yyerror(const string &);
 "<="                    return yy::parser::token::LE;
 "=="                    return yy::parser::token::EQ;
 "!="                    return yy::parser::token::NE;
-[ \t\n]+                ;       /* ignore whitespace */
+[ \t\r\n]+              ;       /* ignore whitespace */
 \/\/.*$                 ;       /* ignore line comment */
 .                       yyerror(string("Unknown character"));
 %%
