@@ -4,7 +4,7 @@
 #include <iostream>
 using namespace std;
 
-enum ExpectedType { None, Integer, Decimal };
+enum ExpectedType { None, Integer, Decimal, String };
 class Context {
   public:
     ExpectedType expecting = ExpectedType::None;

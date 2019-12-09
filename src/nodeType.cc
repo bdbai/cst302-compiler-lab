@@ -15,6 +15,9 @@ unique_ptr<nodeType> nodeType::make_constant(int con) {
 unique_ptr<nodeType> nodeType::make_constant(double con) {
     return make_unique<nodeType>(constantNode(con), "float64");
 }
+unique_ptr<nodeType> nodeType::make_constant(string con) {
+    return make_unique<nodeType>(constantNode(con), "string");
+}
 unique_ptr<nodeType> nodeType::make_symbol(string sym) {
     return make_unique<nodeType>(symbolNode(sym));
 }

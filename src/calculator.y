@@ -37,6 +37,7 @@ void yyerror(char *s);
 
 %token <int32_t> INTEGER
 %token <double> DECIMAL
+%token <string> STRING
 %token <string> VARIABLE
 %token WHILE IF PRINT
 %nonassoc IFX
@@ -90,6 +91,7 @@ stmt_list:
 
 expr:
           INTEGER               { $$ = nodeType::make_constant($1); }
+        | STRING                { $$ = nodeType::make_constant($1); }
         | DECIMAL               { $$ = nodeType::make_constant($1); }
         | VARIABLE              { $$ = nodeType::make_symbol($1); }
         | '-' expr %prec UMINUS { $$ = nodeType::make_op(token::UMINUS, move($2)); }

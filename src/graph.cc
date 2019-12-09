@@ -92,6 +92,9 @@ void exNode(const nodeType &p, int c, int l, /* start column and line of node */
                                                    stringstream ss;
                                                    ss << "c(" << val << ')';
                                                    return ss.str();
+                                               },
+                                               [](const string val) -> string {
+                                                   return val;
                                                }},
                                     conNode.innerValue);
                    },

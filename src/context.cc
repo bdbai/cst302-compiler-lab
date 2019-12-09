@@ -5,6 +5,8 @@ ExpectedType Context::typeStringToExpected(const string &type) {
         return ExpectedType::Integer;
     } else if (type == "float64") {
         return ExpectedType::Decimal;
+    } else if (type == "string") {
+        return ExpectedType::String;
     } else {
         cerr << "Unknown type to expect: " << type << endl;
         abort();

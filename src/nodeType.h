@@ -18,7 +18,7 @@ class symbol {
     string literal;
     int ilid;
     string type;
-    optional<variant<int32_t, double>> value;
+    optional<variant<int32_t, double, string>> value;
 };
 
 extern map<string, symbol> symbols;
@@ -27,7 +27,8 @@ class constantNode {
   public:
     constantNode(int32_t con) : innerValue(con) {}
     constantNode(double con) : innerValue(con) {}
-    variant<int32_t, double> innerValue;
+    constantNode(string con) : innerValue(con) {}
+    variant<int32_t, double, string> innerValue;
 };
 
 class symbolNode {
@@ -67,6 +68,7 @@ class nodeType {
         innerNode;
     static unique_ptr<nodeType> make_constant(int32_t con);
     static unique_ptr<nodeType> make_constant(double con);
+    static unique_ptr<nodeType> make_constant(string con);
     static unique_ptr<nodeType> make_symbol(string sym);
     static unique_ptr<nodeType> make_op(int opr);
     static unique_ptr<nodeType> make_op(int opr, unique_ptr<nodeType> arg1);

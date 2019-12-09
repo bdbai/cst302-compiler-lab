@@ -36,6 +36,7 @@ void yyerror(const string &);
                                 }
                             }
                         }
+\"(\\.|[^\"])*\"        return yy::parser::make_STRING(string(yytext));
 [-()<>=+*/%;{}.]        return *yytext;
 "<<"                    return yy::parser::token::SHL;
 ">>"                    return yy::parser::token::SHR;

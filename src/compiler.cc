@@ -50,6 +50,9 @@ void convertType(const string &typeFrom, const ExpectedType expecting) {
     case ExpectedType::Integer:
         convertType(typeFrom, "int32");
         break;
+    case ExpectedType::String:
+        convertType(typeFrom, "string");
+        break;
     case ExpectedType::None:
         // Do nothing
         break;
@@ -100,17 +103,27 @@ void exBin(const operatorNode &opr) {
     ctx.expecting = Context::typeStringToExpected(commonType);
     ex(*opr1, ctx);
     ex(*opr2, ctx);
-    ilbuf << '\t' << tokenToOperator.at(opr.operatorToken) << endl;
-    // Negate negative operators
-    switch (opr.operatorToken) {
-    case token::GE:
-    case token::LE:
-    case token::NE:
-        ilbuf << "\tldc.i4.0" << endl;
-        ilbuf << "\tceq" << endl;
-        maxStack = max(maxStack, currentStack + 1);
-        break;
+    if (commonType == "int32" || commonType == "float64") {
+        ilbuf << '\t' << tokenToOperator.at(opr.operatorToken) << endl;
+        // Negate negative operators
+        switch (opr.operatorToken) {
+        case token::GE:
+        case token::LE:
+        case token::NE:
+            ilbuf << "\tldc.i4.0" << endl;
+            ilbuf << "\tceq" << endl;
+            break;
+        }
+    } else if (commonType == "string" && opr.operatorToken == '+') {
+        ilbuf << "\tcall string "
+                 "[System.Private.CoreLib]System.String::Concat(string, string)"
+              << endl;
+    } else {
+        cerr << "Cannot perform binary operation " << opr.operatorToken
+             << " on " << type1 << " and " << type2 << endl;
+        abort();
     }
+    currentStack -= 1;
 }
 
 void exWhile(const operatorNode &p) {
@@ -179,11 +192,14 @@ void ex(nodeType &p, Context ctx) {
     visit(
         overloaded{
             [](constantNode &conNode) {
-                visit(overloaded{[](int value) {
+                visit(overloaded{[](const int value) {
                                      ilbuf << "\tldc.i4 " << value << endl;
                                  },
-                                 [](double value) {
+                                 [](const double value) {
                                      ilbuf << "\tldc.r8 " << value << endl;
+                                 },
+                                 [](const string &value) {
+                                     ilbuf << "\tldstr " << value << endl;
                                  }},
                       conNode.innerValue);
                 currentStack++;

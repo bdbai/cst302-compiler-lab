@@ -68,14 +68,18 @@ T interpretBinOpr(int operatorToken, const T opr1, const T opr2) {
     }
 }
 
-double variantToDouble(const variant<int32_t, double> &v) {
+double variantToDouble(const variant<int32_t, double, string> &v) {
     return visit(
         overloaded{[](const int32_t val) -> double { return (double)val; },
-                   [](const double val) -> double { return val; }},
+                   [](const double val) -> double { return val; },
+                   [](const string) -> double {
+                       cerr << "Cannot convert string to double" << endl;
+                       abort();
+                   }},
         v);
 }
 
-variant<int32_t, double> exBin(const operatorNode &opr) {
+variant<int32_t, double, string> exBin(const operatorNode &opr) {
     if (tokenToOperator.find(opr.operatorToken) == tokenToOperator.end()) {
         cerr << "Cannot find opr" << endl;
         abort();
@@ -103,12 +107,19 @@ variant<int32_t, double> exBin(const operatorNode &opr) {
 
 void ex(nodeType &p) { interpret(p); }
 
-variant<int32_t, double> interpretUminus(const operatorNode &p) {
+variant<int32_t, double, string> interpretUminus(const operatorNode &p) {
     const auto &oprand =
         interpret(*get<unique_ptr<nodeType>>(p.operands.value())).value();
     return visit(
-        overloaded{[](int32_t val) -> variant<int32_t, double> { return -val; },
-                   [](double val) -> variant<int32_t, double> { return -val; }},
+        overloaded{
+            [](int32_t val) -> variant<int32_t, double, string> {
+                return -val;
+            },
+            [](double val) -> variant<int32_t, double, string> { return -val; },
+            [](string) -> variant<int32_t, double, string> {
+                cerr << "Cannot minus string" << endl;
+                abort();
+            }},
         oprand);
 }
 void interpretWhile(const operatorNode &p) {
@@ -145,21 +156,47 @@ void interpretIf(const operatorNode &p) {
             }},
         p.operands.value());
 }
+void string_replace(string &haystack, const string &needle,
+                    const std::string &replaceStr) {
+    if (needle.empty()) {
+        return;
+    }
+    size_t pos;
+    while ((pos = haystack.find(needle)) != string::npos) {
+        haystack.replace(pos, needle.length(), replaceStr);
+        pos += replaceStr.length();
+    }
+}
+string unquote(const string &s) {
+    static vector<pair<string, string>> patterns = {{"\\\\", "\\"},
+                                                    {"\\n", "\n"},
+                                                    {"\\r", "\r"},
+                                                    {"\\t", "\t"},
+                                                    {"\\\"", "\""}};
+    string result = s;
+    for (const auto &p : patterns) {
+        string_replace(result, p.first, p.second);
+    }
+    return result;
+}
 void interpretPrint(const operatorNode &p) {
-    const auto &oprand =
+    const auto operand =
         interpret(*get<unique_ptr<nodeType>>(p.operands.value())).value();
-    visit(overloaded{[](const double val) { cout << val << endl; },
-                     [](const int32_t val) { cout << val << endl; }},
-          oprand);
+    visit(overloaded{[](const double &val) { cout << val << endl; },
+                     [](const int32_t &val) { cout << val << endl; },
+                     [](const string &val) { cout << unquote(val); }},
+          operand);
 }
 
-optional<variant<int32_t, double>> interpret(nodeType &p) {
+optional<variant<int32_t, double, string>> interpret(nodeType &p) {
     return visit(
         overloaded{
-            [](constantNode &conNode) -> optional<variant<int32_t, double>> {
+            [](constantNode &conNode)
+                -> optional<variant<int32_t, double, string>> {
                 return conNode.innerValue;
             },
-            [](operatorNode &oprNode) -> optional<variant<int32_t, double>> {
+            [](operatorNode &oprNode)
+                -> optional<variant<int32_t, double, string>> {
                 switch (oprNode.operatorToken) {
                 case token::WHILE:
                     interpretWhile(oprNode);
@@ -182,7 +219,8 @@ optional<variant<int32_t, double>> interpret(nodeType &p) {
                 }
                 return {};
             },
-            [](symbolNode &symNode) -> optional<variant<int32_t, double>> {
+            [](symbolNode &symNode)
+                -> optional<variant<int32_t, double, string>> {
                 if (symbols.find(symNode.symbol) == symbols.end()) {
                     cerr << "Undefined variable: " << symNode.symbol << endl;
                     abort();
@@ -192,13 +230,13 @@ optional<variant<int32_t, double>> interpret(nodeType &p) {
                 return sym.value;
             },
             [](vector<unique_ptr<nodeType>> &nodes)
-                -> optional<variant<int32_t, double>> {
+                -> optional<variant<int32_t, double, string>> {
                 for (const auto &node : nodes) {
                     interpret(*node);
                 }
                 return {};
             },
-            [](auto &rest) -> optional<variant<int32_t, double>> {
+            [](auto &rest) -> optional<variant<int32_t, double, string>> {
                 abort();
                 return {};
             }},
