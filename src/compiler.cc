@@ -92,11 +92,14 @@ void exBin(const operatorNode &opr) {
         opr.operands.value());
     const auto &type1 = opr1->inferType();
     const auto &type2 = opr2->inferType();
-    const auto commonType = getTypeCommon(type1, type2);
-    ex(*opr1);
-    convertType(type1, commonType);
-    ex(*opr2);
-    convertType(type2, commonType);
+    auto commonType = getTypeCommon(type1, type2);
+    if (opr.operatorToken == token::SHL || opr.operatorToken == token::SHR) {
+        commonType = "int32";
+    }
+    auto ctx = Context();
+    ctx.expecting = Context::typeStringToExpected(commonType);
+    ex(*opr1, ctx);
+    ex(*opr2, ctx);
     ilbuf << '\t' << tokenToOperator.at(opr.operatorToken) << endl;
     // Negate negative operators
     switch (opr.operatorToken) {

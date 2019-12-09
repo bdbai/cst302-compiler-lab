@@ -43,6 +43,7 @@ void yyerror(char *s);
 %nonassoc ELSE
 
 %left GE LE EQ NE '>' '<'
+%left SHL SHR
 %left '+' '-'
 %left '*' '/' '%'
 %nonassoc '='
@@ -90,6 +91,8 @@ expr:
         | expr '*' expr         { $$ = nodeType::make_op('*', move($1), move($3)); }
         | expr '/' expr         { $$ = nodeType::make_op('/', move($1), move($3)); }
         | expr '%' expr         { $$ = nodeType::make_op('%', move($1), move($3)); }
+        | expr SHL expr         { $$ = nodeType::make_op(token::SHL, move($1), move($3)); }
+        | expr SHR expr         { $$ = nodeType::make_op(token::SHR, move($1), move($3)); }
         | expr '<' expr         { $$ = nodeType::make_op('<', move($1), move($3)); }
         | expr '>' expr         { $$ = nodeType::make_op('>', move($1), move($3)); }
         | expr GE expr          { $$ = nodeType::make_op(token::GE, move($1), move($3)); }

@@ -37,6 +37,8 @@ void yyerror(const string &);
                             }
                         }
 [-()<>=+*/%;{}.]        return *yytext;
+"<<"                    return yy::parser::token::SHL;
+">>"                    return yy::parser::token::SHR;
 ">="                    return yy::parser::token::GE;
 "<="                    return yy::parser::token::LE;
 "=="                    return yy::parser::token::EQ;
