@@ -98,6 +98,11 @@ variant<int32_t, double, string> exBin(const operatorNode &opr) {
     {
         return interpretBinOpr(opr.operatorToken, variantToDouble(opr1),
                                variantToDouble(opr2));
+    } else if (opr.operatorToken == '+' && holds_alternative<string>(opr1) &&
+               holds_alternative<string>(opr2)) {
+        const auto &str1 = get<string>(opr1);
+        const auto &str2 = get<string>(opr2);
+        return str1.substr(0, str1.size() - 1) + str2.substr(1);
     } else {
         // TODO: other types
         cerr << "Cannot perform operations because of unknown types" << endl;

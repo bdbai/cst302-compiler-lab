@@ -66,9 +66,9 @@ class nodeType {
     variant<constantNode, operatorNode, symbolNode,
             vector<unique_ptr<nodeType>>>
         innerNode;
-    static unique_ptr<nodeType> make_constant(int32_t con);
-    static unique_ptr<nodeType> make_constant(double con);
-    static unique_ptr<nodeType> make_constant(string con);
+    static unique_ptr<nodeType> make_constant(const int32_t con);
+    static unique_ptr<nodeType> make_constant(const double con);
+    static unique_ptr<nodeType> make_constant(const string &con);
     static unique_ptr<nodeType> make_symbol(string sym);
     static unique_ptr<nodeType> make_op(int opr);
     static unique_ptr<nodeType> make_op(int opr, unique_ptr<nodeType> arg1);

@@ -9,13 +9,13 @@ bool symbolNode::operator<(const symbolNode &other) const {
     return this->symbol < other.symbol;
 }
 
-unique_ptr<nodeType> nodeType::make_constant(int con) {
+unique_ptr<nodeType> nodeType::make_constant(const int con) {
     return make_unique<nodeType>(constantNode(con), "int32");
 }
-unique_ptr<nodeType> nodeType::make_constant(double con) {
+unique_ptr<nodeType> nodeType::make_constant(const double con) {
     return make_unique<nodeType>(constantNode(con), "float64");
 }
-unique_ptr<nodeType> nodeType::make_constant(string con) {
+unique_ptr<nodeType> nodeType::make_constant(const string &con) {
     return make_unique<nodeType>(constantNode(con), "string");
 }
 unique_ptr<nodeType> nodeType::make_symbol(string sym) {
