@@ -1,6 +1,6 @@
 #include "interpreter.h"
 
-void before_processing() {}
+void before_processing() { Lexer::isInterpreter = true; }
 
 void after_processing() {}
 

@@ -1,6 +1,7 @@
 #include "compiler.h"
 
 void before_processing() {
+    Lexer::isCompiler = true;
     cout << ".assembly calculator {} " << endl
          << ".method public hidebysig static void Main () cil managed " << endl
          << "{" << endl;

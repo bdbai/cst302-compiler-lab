@@ -7,6 +7,7 @@
 using namespace std;
 #include "nodeType.h"
 #include "y.tab.hh"
+#include "lexer.h"
 
 typedef yy::parser::token_type token;
 

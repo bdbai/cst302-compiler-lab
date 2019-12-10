@@ -1,4 +1,4 @@
-%option c++ noyywrap
+%option c++ noyywrap stack
 %option yyclass="Lexer"
 %{
 #include <cstdlib>
@@ -11,6 +11,7 @@ using namespace std;
 void yyerror(const string &);
 %}
 
+%s BLOCK_END
 %%
 "while"                 return yy::parser::token::WHILE;
 "if"                    return yy::parser::token::IF;
@@ -37,7 +38,11 @@ void yyerror(const string &);
                             }
                         }
 \"(\\.|[^\"])*\"        return yy::parser::make_STRING(string(yytext));
-[-()<>=+*/%;{}.]        return *yytext;
+[-()<>=+*/%;{.]         return *yytext;
+"}"                     {
+    yy_push_state(BLOCK_END);
+    return *yytext;
+}
 "<<"                    return yy::parser::token::SHL;
 ">>"                    return yy::parser::token::SHR;
 ">="                    return yy::parser::token::GE;
@@ -51,7 +56,13 @@ void yyerror(const string &);
 "%="                    return yy::parser::token::REMAS;
 "<<="                   return yy::parser::token::SHLAS;
 ">>="                   return yy::parser::token::SHRAS;
-[ \t\r\n]+              ;       /* ignore whitespace */
+[ \t\r]+                ;       /* ignore whitespace */
+<BLOCK_END>\n           {
+    if (!Lexer::isCompiler) {
+        return ';';
+    }
+}
+\n                      ;
 \/\/.*$                 ;       /* ignore line comment */
 .                       yyerror(string("Unknown character"));
 %%

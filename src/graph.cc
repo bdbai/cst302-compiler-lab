@@ -45,7 +45,7 @@ void graphDrawArrow(int c1, int l1, int c2, int l2);
 void exNode(const nodeType &p, int c, int l, int *ce, int *cm);
 
 /*****************************************************************************/
-void before_processing() {}
+void before_processing() { Lexer::isGraph = true; }
 void after_processing() {}
 /* main entry point of the manipulation of the syntax tree */
 void ex(nodeType &p) {
