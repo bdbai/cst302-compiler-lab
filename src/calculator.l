@@ -9,6 +9,7 @@ using namespace std;
 #define YY_DECL yy::parser::symbol_type Lexer::yylex(int drv)
 #include "lexer.h"
 void yyerror(const string &);
+int blockLevel = 0;
 %}
 
 %s BLOCK_END
@@ -38,9 +39,23 @@ void yyerror(const string &);
                             }
                         }
 \"(\\.|[^\"])*\"        return yy::parser::make_STRING(string(yytext));
-[-()<>=+*/%;{.]         return *yytext;
+[-()<>=+*/%;.]          return *yytext;
+"{"                     {
+    blockLevel++;
+    return *yytext;
+}
+<BLOCK_END>"{"          {
+    blockLevel++;
+    if (!Lexer::isCompiler) {
+        yy_pop_state();
+    }
+    return *yytext;
+}
 "}"                     {
-    yy_push_state(BLOCK_END);
+    blockLevel--;
+    if (blockLevel == 0 && !Lexer::isCompiler) {
+        yy_push_state(BLOCK_END);
+    }
     return *yytext;
 }
 "<<"                    return yy::parser::token::SHL;
@@ -59,6 +74,7 @@ void yyerror(const string &);
 [ \t\r]+                ;       /* ignore whitespace */
 <BLOCK_END>\n           {
     if (!Lexer::isCompiler) {
+        yy_pop_state();
         return ';';
     }
 }
