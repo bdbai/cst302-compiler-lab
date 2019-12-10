@@ -122,15 +122,25 @@ variant<int32_t, double, string> interpretUminus(const operatorNode &p) {
             }},
         oprand);
 }
+bool isTruthy(const variant<int32_t, double, string> &val) {
+    return visit(overloaded{[](const int32_t val) -> bool { return (bool)val; },
+                            [](const double val) -> bool { return (bool)val; },
+                            [](const string) -> bool {
+                                cerr << "Cannot use string as conditions"
+                                     << endl;
+                                abort();
+                            }},
+                 val);
+}
 void interpretWhile(const operatorNode &p) {
     const auto &operands =
         get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
             p.operands.value());
-    int32_t cond;
-    while ((cond = get<int32_t>(interpret(*operands.first).value()))) {
+    while ((isTruthy(interpret(*operands.first).value()))) {
         interpret(*operands.second);
     }
 }
+
 void interpretIf(const operatorNode &p) {
     visit(
         overloaded{
@@ -140,7 +150,7 @@ void interpretIf(const operatorNode &p) {
             },
             [](const pair<unique_ptr<nodeType>, unique_ptr<nodeType>> &ifBody) {
                 const auto &[condNodePtr, bodyNodePtr] = ifBody;
-                if (interpret(*condNodePtr)) {
+                if (isTruthy(interpret(*condNodePtr).value())) {
                     interpret(*bodyNodePtr);
                 }
             },
@@ -148,7 +158,7 @@ void interpretIf(const operatorNode &p) {
                            unique_ptr<nodeType>> &ifElseBody) {
                 const auto &[condNodePtr, bodyNodePtr, elseNodePtr] =
                     ifElseBody;
-                if (interpret(*condNodePtr)) {
+                if (isTruthy(interpret(*condNodePtr).value())) {
                     interpret(*bodyNodePtr);
                 } else {
                     interpret(*elseNodePtr);
@@ -174,6 +184,10 @@ string unquote(const string &s) {
                                                     {"\\t", "\t"},
                                                     {"\\\"", "\""}};
     string result = s;
+    if (result.length() >= 2) {
+        // Remove surrounding quotes
+        result = result.substr(1, result.length() - 2);
+    }
     for (const auto &p : patterns) {
         string_replace(result, p.first, p.second);
     }
@@ -184,7 +198,7 @@ void interpretPrint(const operatorNode &p) {
         interpret(*get<unique_ptr<nodeType>>(p.operands.value())).value();
     visit(overloaded{[](const double &val) { cout << val << endl; },
                      [](const int32_t &val) { cout << val << endl; },
-                     [](const string &val) { cout << unquote(val); }},
+                     [](const string &val) { cout << unquote(val) << endl; }},
           operand);
 }
 

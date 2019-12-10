@@ -17,6 +17,7 @@ variant<int32_t, double, string> interpretUminus(const nodeType &p);
 template <typename T>
 T interpretBinOpr(int operatorToken, const T opr1, const T opr2);
 void interpretWhile(const operatorNode &p);
+bool isTruthy(const variant<int32_t, double, string> &val);
 void interpretIf(const operatorNode &p);
 string string_replace(const string &haystack, const string &needle,
                       const std::string &replaceStr);
