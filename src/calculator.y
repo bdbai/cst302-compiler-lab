@@ -22,6 +22,7 @@ using namespace std;
 
 #include "lexer.h"
 Lexer lexer;
+bool closingIf;
 
 extern "C"
 yy::parser::symbol_type yylex() {
@@ -40,6 +41,7 @@ void yyerror(char *s);
 %token <string> STRING
 %token <string> VARIABLE
 %token WHILE IF PRINT
+%token '(' ')' '{' '}' ';'
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -50,7 +52,7 @@ void yyerror(char *s);
 %left '*' '/' '%'
 %nonassoc UMINUS
 
-%type <unique_ptr<nodeType>> stmt expr stmt_list
+%type <unique_ptr<nodeType>> stmt expr stmt_list if_tail
 
 %code {
     using namespace yy;
@@ -79,10 +81,15 @@ stmt:
         | VARIABLE SHLAS expr ';'        { $$ = nodeType::make_opas(token::SHL, $1, move($3)); }
         | VARIABLE SHRAS expr ';'        { $$ = nodeType::make_opas(token::SHR, $1, move($3)); }
         | WHILE '(' expr ')' stmt        { $$ = nodeType::make_op(token::WHILE, move($3), move($5)); }
-        | IF '(' expr ')' stmt %prec IFX { $$ = nodeType::make_op(token::IF, move($3), move($5)); }
-        | IF '(' expr ')' stmt ELSE stmt { $$ = nodeType::make_op(token::IF, move($3), move($5), move($7)); }
+        | IF '(' expr ')' stmt           { closingIf = true; }
+          if_tail                        { closingIf = false; $$ = nodeType::make_op(token::IF, move($3), move($5), move($7)); }
         | '{' stmt_list '}'              { $$ = move($2); }
         ;
+
+if_tail:
+          %prec IFX                     { $$ = nodeType::make_ops(); }
+        | ELSE stmt                     { $$ = move($2); }
+        
 
 stmt_list:
           stmt                  { $$ = move(nodeType::make_ops(move($1))); }

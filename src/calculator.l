@@ -10,13 +10,20 @@ using namespace std;
 #include "lexer.h"
 void yyerror(const string &);
 int blockLevel = 0;
+extern bool closingIf;
 %}
 
-%s BLOCK_END
+%s OUTER_IF END_IF
 %%
 "while"                 return yy::parser::token::WHILE;
 "if"                    return yy::parser::token::IF;
-"else"                  return yy::parser::token::ELSE;
+"else"                  {
+    if (!Lexer::isCompiler && closingIf && blockLevel == 0) {
+        // if (cond) stmt else \n
+        closingIf = false;
+    }
+    return yy::parser::token::ELSE;
+}
 "print"                 return yy::parser::token::PRINT;
 [_a-zA-Z][_a-zA-Z0-9]*  return yy::parser::make_VARIABLE(string(yytext));
 0                       return yy::parser::make_INTEGER(atoi(yytext));
@@ -44,18 +51,13 @@ int blockLevel = 0;
     blockLevel++;
     return *yytext;
 }
-<BLOCK_END>"{"          {
-    blockLevel++;
-    if (!Lexer::isCompiler) {
-        yy_pop_state();
+"\n" {
+    if (!Lexer::isCompiler && closingIf && blockLevel == 0) {
+        return ';';
     }
-    return *yytext;
 }
 "}"                     {
     blockLevel--;
-    if (blockLevel == 0 && !Lexer::isCompiler) {
-        yy_push_state(BLOCK_END);
-    }
     return *yytext;
 }
 "<<"                    return yy::parser::token::SHL;
@@ -72,13 +74,6 @@ int blockLevel = 0;
 "<<="                   return yy::parser::token::SHLAS;
 ">>="                   return yy::parser::token::SHRAS;
 [ \t\r]+                ;       /* ignore whitespace */
-<BLOCK_END>\n           {
-    if (!Lexer::isCompiler) {
-        yy_pop_state();
-        return ';';
-    }
-}
-\n                      ;
 \/\/.*$                 ;       /* ignore line comment */
 .                       yyerror(string("Unknown character"));
 %%

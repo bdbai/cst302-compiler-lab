@@ -242,8 +242,12 @@ void ex(nodeType &p, Context ctx) {
                 maxStack = max(maxStack, currentStack);
             },
             [](vector<unique_ptr<nodeType>> &nodes) {
-                for (const auto &node : nodes) {
-                    ex(*node);
+                if (nodes.size() == 0) {
+                    ilbuf << "\tnop" << endl;
+                } else {
+                    for (const auto &node : nodes) {
+                        ex(*node);
+                    }
                 }
             },
             [](auto &) { abort(); }},
