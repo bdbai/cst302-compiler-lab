@@ -8,8 +8,10 @@
 
 void before_processing();
 void after_processing();
+variant<int32_t, double, string>
+convertType(const variant<int32_t, double, string> &from,
+            const string &typeFrom, const string &typeTo);
 void exAssign(const operatorNode &opr);
-
 double variantToDouble(const variant<int32_t, double, string> &v);
 variant<int32_t, double, string> exBin(const operatorNode &opr);
 void ex(nodeType &p);

@@ -46,12 +46,12 @@ extern bool closingIf;
                             }
                         }
 \"(\\.|[^\"])*\"        return yy::parser::make_STRING(string(yytext));
-[-()<>=+*/%;.]          return *yytext;
+[-()<>=+*/%;.,]         return *yytext;
 "{"                     {
     blockLevel++;
     return *yytext;
 }
-"\n" {
+"\n"                    {
     if (!Lexer::isCompiler && closingIf && blockLevel == 0) {
         return ';';
     }

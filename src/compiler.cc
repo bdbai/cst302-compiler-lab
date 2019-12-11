@@ -97,6 +97,11 @@ void exBin(const operatorNode &opr) {
     const auto &type1 = opr1->inferType();
     const auto &type2 = opr2->inferType();
     auto commonType = getTypeCommon(type1, type2);
+    if (commonType == "!") {
+        cerr << "Cannot perform binary operation " << opr.operatorToken
+             << " on " << type1 << " and " << type2 << endl;
+        abort();
+    }
     if (opr.operatorToken == token::SHL || opr.operatorToken == token::SHR) {
         commonType = "int32";
     }
@@ -250,7 +255,44 @@ void ex(nodeType &p, Context ctx) {
                     }
                 }
             },
-            [](auto &) { abort(); }},
+            [](callNode &cNode) {
+                const auto &method = cNode.resolveMethod();
+                if (method.has_value()) {
+                    const auto &resolvedMethod = method.value().get();
+                    for (size_t i = 0; i < resolvedMethod.parameters.size();
+                         i++) {
+                        Context ctx;
+                        ctx.expecting = Context::typeStringToExpected(
+                            resolvedMethod.parameters[i]);
+                        ex(*cNode.params[i], ctx);
+                    }
+                    if (resolvedMethod.isVirtual) {
+                        ilbuf << "\tcallvirt ";
+                    } else {
+                        ilbuf << "\tcall ";
+                    }
+                    if (resolvedMethod.isInstance) {
+                        ilbuf << "instance ";
+                    }
+                    ilbuf << resolvedMethod.returnType << ' ' << '['
+                          << resolvedMethod.assemblyName << ']'
+                          << resolvedMethod.typeQualifier << ':' << ':'
+                          << resolvedMethod.methodName << '(';
+                    for (size_t i = 0; i < resolvedMethod.parameters.size();
+                         i++) {
+                        if (i) {
+                            ilbuf << ',' << ' ';
+                        }
+                        ilbuf << resolvedMethod.parameters[i];
+                    }
+                    ilbuf << ')' << endl;
+                    currentStack -= resolvedMethod.parameters.size() - 1;
+                } else {
+                    cerr << "Cannot find an overloaded method: " << cNode.func
+                         << endl;
+                    abort();
+                }
+            }},
         p.innerNode);
     if (ctx.expecting != ExpectedType::None) {
         convertType(p.inferType(), ctx.expecting);

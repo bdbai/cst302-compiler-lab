@@ -7,6 +7,8 @@
 #include <vector>
 #include <iostream>
 #include <map>
+#include <cstdint>
+#include "method.h"
 
 using namespace std;
 
@@ -53,6 +55,18 @@ class operatorNode {
         operands;
 };
 
+class callNode {
+  private:
+    optional<reference_wrapper<const method>> resolvedMethod;
+
+  public:
+    callNode(const string &func, vector<unique_ptr<nodeType>> params)
+        : func(func), params(move(params)) {}
+    string func;
+    vector<unique_ptr<nodeType>> params;
+    optional<reference_wrapper<const method>> resolveMethod();
+};
+
 class nodeType {
   private:
     optional<string> type;
@@ -62,9 +76,10 @@ class nodeType {
         : type(type), innerNode(con) {}
     nodeType(operatorNode op) : innerNode(move(op)) {}
     nodeType(symbolNode sym) : innerNode(sym) {}
+    nodeType(callNode call) : innerNode(move(call)) {}
     nodeType(vector<unique_ptr<nodeType>> nodes) : innerNode(move(nodes)) {}
     variant<constantNode, operatorNode, symbolNode,
-            vector<unique_ptr<nodeType>>>
+            vector<unique_ptr<nodeType>>, callNode>
         innerNode;
     static unique_ptr<nodeType> make_constant(const int32_t con);
     static unique_ptr<nodeType> make_constant(const double con);
@@ -81,6 +96,8 @@ class nodeType {
     static unique_ptr<nodeType> make_ops(unique_ptr<nodeType> op);
     static unique_ptr<nodeType> make_opas(int opr, const string symbol,
                                           unique_ptr<nodeType> arg);
+    static unique_ptr<nodeType> make_call(const string &func,
+                                          vector<unique_ptr<nodeType>> params);
     void push_op(unique_ptr<nodeType> op);
     const string inferType();
     void setType(const string &type);

@@ -65,11 +65,50 @@ unique_ptr<nodeType> nodeType::make_opas(int opr, const string symbol,
                           move(nodeType::make_op(
                               opr, nodeType::make_symbol(symbol), move(arg)))));
 }
+unique_ptr<nodeType> nodeType::make_call(const string &func,
+                                         vector<unique_ptr<nodeType>> params) {
+    callNode node(func, move(params));
+    return make_unique<nodeType>(move(node));
+}
+optional<reference_wrapper<const method>> callNode::resolveMethod() {
+    if (this->resolvedMethod.has_value()) {
+        return this->resolvedMethod;
+    }
+    int8_t retScore = INT8_MAX;
+    optional<reference_wrapper<const method>> ret;
+    for (auto it = methodMap.find(this->func); it != methodMap.end(); it++) {
+        if (it->second.parameters.size() != this->params.size()) {
+            continue;
+        }
+        int8_t score = 0;
+        for (size_t i = 0; i < it->second.parameters.size(); i++) {
+            auto const &canType = it->second.parameters[i];
+            auto const &parType = this->params[i]->inferType();
+            auto const &commonType = getTypeCommon(canType, parType);
+            if (commonType == "!") {
+                score = INT8_MAX;
+                break;
+            }
+            if (commonType != parType) {
+                score += 1;
+            }
+        }
+        if (score < retScore) {
+            retScore = score;
+            ret.emplace(it->second);
+        }
+    }
+    this->resolvedMethod.swap(ret);
+    return this->resolvedMethod;
+}
 void nodeType::push_op(unique_ptr<nodeType> op) {
     get<vector<unique_ptr<nodeType>>>(this->innerNode).push_back(move(op));
 }
 void nodeType::setType(const string &type) { this->type = type; }
 const string getTypeCommon(const string &type1, const string &type2) {
+    if (type1 == "!" || type2 == "!") {
+        return type1;
+    }
     if (type1 == type2) {
         return type1;
     }
@@ -77,8 +116,7 @@ const string getTypeCommon(const string &type1, const string &type2) {
         (type1 == "float64" && type2 == "int32")) {
         return "float64";
     }
-    cerr << "Cannot get common type of " << type1 << " and " << type2 << endl;
-    abort();
+    return "!";
 }
 const string nodeType::inferType() {
     if (this->type.has_value()) {
@@ -87,6 +125,8 @@ const string nodeType::inferType() {
     const auto result = visit(
         overloaded{
             [](const constantNode &) -> const string {
+                return "!";
+                // TODO: type error
                 cerr << "Cannot infer type of constant node" << endl;
                 abort();
             },
@@ -125,8 +165,21 @@ const string nodeType::inferType() {
             },
             [](const vector<unique_ptr<nodeType>> &) -> const string {
                 return "!";
+            },
+            [](callNode &cNode) -> const string {
+                // TODO: infer function return type
+                const auto &method = cNode.resolveMethod();
+                if (method.has_value()) {
+                    return method.value().get().returnType;
+                } else {
+                    return "!";
+                }
             }},
         this->innerNode);
+    if (result == "!") {
+        cerr << "Cannot infer type" << endl;
+        abort();
+    }
     this->type = result;
     return result;
 }

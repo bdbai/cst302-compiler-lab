@@ -111,6 +111,9 @@ void exNode(const nodeType &p, int c, int l, /* start column and line of node */
                            return "empty";
                        }
                        return "stmts";
+                   },
+                   [](const callNode &cNode) -> string {
+                       return "call(" + cNode.func + ")";
                    }},
         p.innerNode);
 
@@ -166,6 +169,14 @@ void exNode(const nodeType &p, int c, int l, /* start column and line of node */
                 -> vector<reference_wrapper<const nodeType>> {
                 vector<reference_wrapper<const nodeType>> ret;
                 for (const auto &node : nodes) {
+                    ret.push_back(*node);
+                }
+                return ret;
+            },
+            [](const callNode &cNode)
+                -> vector<reference_wrapper<const nodeType>> {
+                vector<reference_wrapper<const nodeType>> ret;
+                for (const auto &node : cNode.params) {
                     ret.push_back(*node);
                 }
                 return ret;

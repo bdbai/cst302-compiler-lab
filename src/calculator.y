@@ -41,7 +41,7 @@ void yyerror(char *s);
 %token <string> STRING
 %token <string> VARIABLE
 %token WHILE IF PRINT
-%token '(' ')' '{' '}' ';'
+%token '(' ')' '{' '}' ';' ','
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -53,6 +53,7 @@ void yyerror(char *s);
 %nonassoc UMINUS
 
 %type <unique_ptr<nodeType>> stmt expr stmt_list if_tail
+%type <vector<unique_ptr<nodeType>>> param_list param_list_opt
 
 %code {
     using namespace yy;
@@ -116,6 +117,21 @@ expr:
         | expr NE expr          { $$ = nodeType::make_op(token::NE, move($1), move($3)); }
         | expr EQ expr          { $$ = nodeType::make_op(token::EQ, move($1), move($3)); }
         | '(' expr ')'          { $$ = move($2); }
+        | VARIABLE '(' param_list_opt ')' { $$ = nodeType::make_call($1, move($3)); }
+        ;
+
+param_list_opt:
+        param_list              { $$ = move($1); }
+        | /* NULL */            { $$ = move(vector<unique_ptr<nodeType>>()); }
+        ;
+
+param_list:
+        param_list ',' expr     { $1.push_back(move($3)); $$ = move($1); }
+        | expr                  {
+          auto l = vector<unique_ptr<nodeType>>();
+          l.push_back(move($1));
+          $$ = move(l);
+        }
         ;
 
 %%

@@ -4,6 +4,23 @@ void before_processing() { Lexer::isInterpreter = true; }
 
 void after_processing() {}
 
+variant<int32_t, double, string>
+convertType(const variant<int32_t, double, string> &from,
+            const string &typeFrom, const string &typeTo) {
+    if (typeFrom == typeTo) {
+        return from;
+    }
+    if (typeFrom == "int32" && typeTo == "float64") {
+        return static_cast<double>(get<int32_t>(from));
+        // Implicit cast from f64 to i32 is not allowed
+        // } else if (typeFrom == "float64" && typeTo == "int32") {
+        //     return static_cast<int32_t>(get<double>(from));
+    } else {
+        cerr << "Cannot convert " << typeFrom << " to " << typeTo << endl;
+        abort();
+    }
+}
+
 void exAssign(const operatorNode &opr) {
     const auto &[id_ptr, expr_ptr] =
         get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
@@ -113,7 +130,7 @@ variant<int32_t, double, string> exBin(const operatorNode &opr) {
 void ex(nodeType &p) { interpret(p); }
 
 variant<int32_t, double, string> interpretUminus(const operatorNode &p) {
-    const auto &oprand =
+    const auto oprand =
         interpret(*get<unique_ptr<nodeType>>(p.operands.value())).value();
     return visit(
         overloaded{
@@ -255,9 +272,24 @@ optional<variant<int32_t, double, string>> interpret(nodeType &p) {
                 }
                 return {};
             },
-            [](auto &rest) -> optional<variant<int32_t, double, string>> {
-                abort();
-                return {};
+            [](callNode &cNode) -> optional<variant<int32_t, double, string>> {
+                const auto &method = cNode.resolveMethod();
+                if (method.has_value()) {
+                    vector<variant<int32_t, double, string>> params;
+                    const auto &realMethod = method.value().get();
+                    for (size_t i = 0; i < realMethod.parameters.size(); i++) {
+                        const auto &parType = cNode.params[i]->inferType();
+                        const auto &conType = realMethod.parameters[i];
+                        params.push_back(
+                            convertType(interpret(*cNode.params[i]).value(),
+                                        parType, conType));
+                    }
+                    return method.value().get().call(params);
+                } else {
+                    cerr << "Cannot find an overloaded method: " << cNode.func
+                         << endl;
+                    abort();
+                }
             }},
         p.innerNode);
 }

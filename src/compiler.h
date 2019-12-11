@@ -7,7 +7,7 @@
 
 stringstream ilbuf;
 size_t label = 0;
-size_t maxStack = 0;
+size_t maxStack = 1;
 size_t currentStack = 0;
 
 void convertType(const string &typeFrom, const string &typeTo);
