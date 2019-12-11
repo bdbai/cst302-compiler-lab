@@ -15,6 +15,7 @@ extern bool closingIf;
 
 %s OUTER_IF END_IF
 %%
+"for"                   return yy::parser::token::FOR;
 "while"                 return yy::parser::token::WHILE;
 "if"                    return yy::parser::token::IF;
 "else"                  {
