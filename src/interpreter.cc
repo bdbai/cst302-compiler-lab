@@ -216,9 +216,16 @@ void interpretIf(const operatorNode &p) {
 void interpretPrint(const operatorNode &p) {
     const auto operand =
         interpret(*get<unique_ptr<nodeType>>(p.operands.value())).value();
-    visit(overloaded{[](const double &val) { cout << val << endl; },
-                     [](const int32_t &val) { cout << val << endl; },
-                     [](const string &val) { cout << unquote(val) << endl; }},
+    visit(overloaded{[](const double &val) {
+                         cout << "\u001b[32m" << val << "\u001b[0m" << endl;
+                     },
+                     [](const int32_t &val) {
+                         cout << "\u001b[32m" << val << "\u001b[0m" << endl;
+                     },
+                     [](const string &val) {
+                         cout << "\u001b[32m" << unquote(val) << "\u001b[0m"
+                              << endl;
+                     }},
           operand);
 }
 
