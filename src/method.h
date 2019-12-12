@@ -40,6 +40,11 @@ class method {
     call(vector<variant<int32_t, double, string>>) const;
 };
 
+string string_replace(const string &haystack, const string &needle,
+                      const std::string &replaceStr);
+string quote(const string &s);
+string unquote(const string &s);
+
 extern unordered_multimap<string, method> methodMap;
 
 #endif

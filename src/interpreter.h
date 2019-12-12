@@ -25,9 +25,6 @@ void interpretWhile(const operatorNode &p);
 void interpretFor(const operatorNode &p);
 bool isTruthy(const variant<int32_t, double, string> &val);
 void interpretIf(const operatorNode &p);
-string string_replace(const string &haystack, const string &needle,
-                      const std::string &replaceStr);
-string unquote(const string &s);
 void interpretPrint(const operatorNode &p);
 optional<variant<int32_t, double, string>> interpret(nodeType &p);
 

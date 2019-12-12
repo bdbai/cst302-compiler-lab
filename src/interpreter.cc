@@ -212,33 +212,7 @@ void interpretIf(const operatorNode &p) {
             }},
         p.operands.value());
 }
-void string_replace(string &haystack, const string &needle,
-                    const std::string &replaceStr) {
-    if (needle.empty()) {
-        return;
-    }
-    size_t pos;
-    while ((pos = haystack.find(needle)) != string::npos) {
-        haystack.replace(pos, needle.length(), replaceStr);
-        pos += replaceStr.length();
-    }
-}
-string unquote(const string &s) {
-    static vector<pair<string, string>> patterns = {{"\\\\", "\\"},
-                                                    {"\\n", "\n"},
-                                                    {"\\r", "\r"},
-                                                    {"\\t", "\t"},
-                                                    {"\\\"", "\""}};
-    string result = s;
-    if (result.length() >= 2) {
-        // Remove surrounding quotes
-        result = result.substr(1, result.length() - 2);
-    }
-    for (const auto &p : patterns) {
-        string_replace(result, p.first, p.second);
-    }
-    return result;
-}
+
 void interpretPrint(const operatorNode &p) {
     const auto operand =
         interpret(*get<unique_ptr<nodeType>>(p.operands.value())).value();
