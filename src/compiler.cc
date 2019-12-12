@@ -231,7 +231,6 @@ void exContinue() {
     ilbuf << "\tbr.s LABEL" << continueJump.top() << endl;
 }
 void exBreak() {
-
     if (breakJump.empty()) {
         cerr << "break statement is not allowed" << endl;
         abort();
@@ -245,7 +244,10 @@ void exBreak() {
 
 void ex(nodeType &p) {
     ex(p, {});
-    // TODO: stack balancing
+    while (currentStack > 0) {
+        ilbuf << "\tpop" << endl;
+        currentStack--;
+    }
 }
 
 void ex(nodeType &p, Context ctx) {
