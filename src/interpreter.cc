@@ -155,11 +155,35 @@ bool isTruthy(const variant<int32_t, double, string> &val) {
                  val);
 }
 void interpretWhile(const operatorNode &p) {
-    const auto &operands =
+    const auto &[cond, body] =
         get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
             p.operands.value());
-    while ((isTruthy(interpret(*operands.first).value()))) {
-        interpret(*operands.second);
+    while ((isTruthy(interpret(*cond).value()))) {
+        try {
+            interpret(*body);
+        } catch (const continueException &) {
+            continue;
+        } catch (const breakException &) {
+            break;
+        }
+    }
+}
+void interpretFor(const operatorNode &p) {
+    const auto &[init, whileNode, next] =
+        get<tuple<unique_ptr<nodeType>, unique_ptr<nodeType>,
+                  unique_ptr<nodeType>>>(p.operands.value());
+    const auto &[cond, body] =
+        get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
+            get<operatorNode>(whileNode->innerNode).operands.value());
+    for (interpret(*init); isTruthy(interpret(*cond).value());
+         interpret(*next)) {
+        try {
+            interpret(*body);
+        } catch (const continueException &) {
+            continue;
+        } catch (const breakException &) {
+            break;
+        }
     }
 }
 
@@ -234,9 +258,16 @@ optional<variant<int32_t, double, string>> interpret(nodeType &p) {
             [](operatorNode &oprNode)
                 -> optional<variant<int32_t, double, string>> {
                 switch (oprNode.operatorToken) {
+                case token::FOR:
+                    interpretFor(oprNode);
+                    break;
                 case token::WHILE:
                     interpretWhile(oprNode);
                     break;
+                case token::CONTINUE:
+                    throw continueException();
+                case token::BREAK:
+                    throw breakException();
                 case token::IF:
                     interpretIf(oprNode);
                     break;

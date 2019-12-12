@@ -11,26 +11,30 @@
 
 #include "common.h"
 
-const unordered_map<int, const char *> tokenToStr = {{'+', "[+]"},
-                                                     {'-', "[-]"},
-                                                     {'*', "[*]"},
-                                                     {'/', "[/]"},
-                                                     {'<', "[<]"},
-                                                     {'>', "[>]"},
-                                                     {'=', "[=]"},
-                                                     {'%', "[%]"},
-                                                     {token::SHL, "[<<]"},
-                                                     {token::SHR, "[>>]"},
-                                                     {token::GE, "[>=]"},
-                                                     {token::LE, "[<=]"},
-                                                     {token::EQ, "[==]"},
-                                                     {token::NE, "[!=]"},
-                                                     {token::WHILE, "while"},
-                                                     {token::IF, "if"},
-                                                     {token::PRINT, "print"},
-                                                     {token::IFX, ""},
-                                                     {token::ELSE, "else"},
-                                                     {token::UMINUS, "[_]"}};
+const unordered_map<int, const char *> tokenToStr = {
+    {'+', "[+]"},
+    {'-', "[-]"},
+    {'*', "[*]"},
+    {'/', "[/]"},
+    {'<', "[<]"},
+    {'>', "[>]"},
+    {'=', "[=]"},
+    {'%', "[%]"},
+    {token::SHL, "[<<]"},
+    {token::SHR, "[>>]"},
+    {token::GE, "[>=]"},
+    {token::LE, "[<=]"},
+    {token::EQ, "[==]"},
+    {token::NE, "[!=]"},
+    {token::WHILE, "while"},
+    {token::IF, "if"},
+    {token::PRINT, "print"},
+    {token::IFX, ""},
+    {token::ELSE, "else"},
+    {token::UMINUS, "[_]"},
+    {token::FOR, "for"},
+    {token::CONTINUE, "continue"},
+    {token::BREAK, "break"}};
 
 int del = 1; /* distance of graph columns */
 int eps = 3; /* distance of graph lines */

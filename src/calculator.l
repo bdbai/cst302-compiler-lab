@@ -13,10 +13,11 @@ int blockLevel = 0;
 extern bool closingIf;
 %}
 
-%s OUTER_IF END_IF
 %%
 "for"                   return yy::parser::token::FOR;
 "while"                 return yy::parser::token::WHILE;
+"break"                 return yy::parser::token::BREAK;
+"continue"              return yy::parser::token::CONTINUE;
 "if"                    return yy::parser::token::IF;
 "else"                  {
     if (!Lexer::isCompiler && closingIf && blockLevel == 0) {

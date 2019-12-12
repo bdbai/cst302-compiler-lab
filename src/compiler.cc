@@ -132,18 +132,48 @@ void exBin(const operatorNode &opr) {
     currentStack -= 1;
 }
 
-void exWhile(const operatorNode &p) {
+void exLoop(nodeType &condNode, nodeType &bodyNode,
+            optional<reference_wrapper<nodeType>> nextNode) {
     const auto checkLabel = ++label, loopLabel = ++label;
-    const auto &[condNode, bodyNode] =
-        get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
-            p.operands.value());
+    auto nextLabel = checkLabel;
+    if (nextNode.has_value()) {
+        nextLabel = ++label;
+    }
+    continueJump.push(nextLabel);
+    breakJump.push({});
     ilbuf << "\tbr.s LABEL" << checkLabel << endl;
     ilbuf << "\tLABEL" << loopLabel << ": ";
-    ex(*bodyNode);
+    ex(bodyNode);
+    if (nextNode.has_value()) {
+        ilbuf << "\tLABEL" << nextLabel << ": ";
+        ex(nextNode.value());
+    }
     ilbuf << "\tLABEL" << checkLabel << ": ";
-    ex(*condNode);
+    ex(condNode);
     ilbuf << "\tbrtrue.s LABEL" << loopLabel << endl;
     currentStack--;
+    continueJump.pop();
+    const auto breakLabel = breakJump.top();
+    if (breakLabel.has_value()) {
+        ilbuf << "\tLABEL" << breakLabel.value() << ": ";
+    }
+    breakJump.pop();
+}
+
+void exWhile(const operatorNode &p) {
+    auto &[cond, stmts] = get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
+        p.operands.value());
+    exLoop(*cond, *stmts, {});
+}
+
+void exFor(const operatorNode &p) {
+    auto &[init, whileNode, next] =
+        get<tuple<unique_ptr<nodeType>, unique_ptr<nodeType>,
+                  unique_ptr<nodeType>>>(p.operands.value());
+    ex(*init);
+    auto &[cond, stmt] = get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
+        get<operatorNode>(whileNode->innerNode).operands.value());
+    exLoop(*cond, *stmt, *next);
 }
 
 void exIf(const operatorNode &p) {
@@ -189,6 +219,26 @@ void exPrint(const operatorNode &p) {
     currentStack--;
 }
 
+void exContinue() {
+    if (continueJump.empty()) {
+        cerr << "continue statement is not allowed" << endl;
+        abort();
+    }
+    ilbuf << "\tbr.s LABEL" << continueJump.top() << endl;
+}
+void exBreak() {
+
+    if (breakJump.empty()) {
+        cerr << "break statement is not allowed" << endl;
+        abort();
+    }
+    auto &jumpTop = breakJump.top();
+    if (!jumpTop.has_value()) {
+        jumpTop.emplace(++label);
+    }
+    ilbuf << "\tbr.s LABEL" << jumpTop.value() << endl;
+}
+
 void ex(nodeType &p) {
     ex(p, {});
     // TODO: stack balancing
@@ -213,8 +263,17 @@ void ex(nodeType &p, Context ctx) {
             },
             [](operatorNode &oprNode) {
                 switch (oprNode.operatorToken) {
+                case token::FOR:
+                    exFor(oprNode);
+                    break;
                 case token::WHILE:
                     exWhile(oprNode);
+                    break;
+                case token::CONTINUE:
+                    exContinue();
+                    break;
+                case token::BREAK:
+                    exBreak();
                     break;
                 case token::IF:
                     exIf(oprNode);

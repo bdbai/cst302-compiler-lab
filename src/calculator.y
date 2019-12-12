@@ -40,7 +40,7 @@ void yyerror(char *s);
 %token <double> DECIMAL
 %token <string> STRING
 %token <string> VARIABLE
-%token WHILE IF PRINT FOR
+%token WHILE IF PRINT FOR BREAK CONTINUE
 %token '(' ')' '{' '}' ';' ','
 %nonassoc IFX
 %nonassoc ELSE
@@ -52,8 +52,9 @@ void yyerror(char *s);
 %left '*' '/' '%'
 %nonassoc UMINUS
 
-%type <unique_ptr<nodeType>> stmt expr stmt_list stmt_expr if_tail
+%type <unique_ptr<nodeType>> stmt expr stmt_list stmt_expr stmt_expr_opt expr_opt
 %type <vector<unique_ptr<nodeType>>> param_list param_list_opt
+%type <optional<unique_ptr<nodeType>>> if_tail
 
 %code {
     using namespace yy;
@@ -69,24 +70,40 @@ function:
         | /* NULL */
         ;
 
+stmt_expr_opt:
+          stmt_expr             { $$ = move($1); }
+        | /* NULL */            { $$ = nodeType::make_ops(); }
+        ;
+
+expr_opt:
+          expr                  { $$ = move($1); }
+        | /* NULL */            { $$ = nodeType::make_ops(); }
+        ;
+
 stmt:
           ';'                            { $$ = nodeType::make_ops(); }
+        | CONTINUE ';'                   { $$ = nodeType::make_op(token::CONTINUE); }
+        | BREAK ';'                      { $$ = nodeType::make_op(token::BREAK); }
         | stmt_expr ';'                  { $$ = move($1); }
         | WHILE '(' expr ')' stmt        { $$ = nodeType::make_op(token::WHILE, move($3), move($5)); }
         | IF '(' expr ')' stmt           { closingIf = true; }
-          if_tail                        { closingIf = false; $$ = nodeType::make_op(token::IF, move($3), move($5), move($7)); }
-        | FOR '(' stmt_expr ';' expr ';' stmt_expr ')' stmt {
-          auto node = nodeType::make_ops(move($3));
-          auto stmts = nodeType::make_ops(move($9));
-          stmts->push_op(move($7));
-          node->push_op(nodeType::make_op(token::WHILE, move($5), move(stmts)));
-          $$ = move(node);
+          if_tail                        {
+            closingIf = false;
+            if ($7.has_value()) {
+              $$ = nodeType::make_op(token::IF, move($3), move($5), move($7.value()));
+            } else {
+              $$ = nodeType::make_op(token::IF, move($3), move($5));
+            }
+          }
+        | FOR '(' stmt_expr_opt ';' expr_opt ';' stmt_expr_opt ')' stmt {
+          auto whileNode = nodeType::make_op(token::WHILE, move($5), move($9));
+          $$ = nodeType::make_op(token::FOR, move($3), move(whileNode), move($7));
         }
         | '{' stmt_list '}'              { $$ = move($2); }
         ;
 
 stmt_expr:
-        expr                  { $$ = move($1); }
+        expr                    { $$ = move($1); }
         | PRINT expr            { $$ = nodeType::make_op(token::PRINT, move($2)); }
         | VARIABLE '=' expr     { $$ = nodeType::make_op('=', move(nodeType::make_symbol($1)), move($3)); }
         | VARIABLE ADDAS expr   { $$ = nodeType::make_opas('+', $1, move($3)); }
@@ -99,9 +116,8 @@ stmt_expr:
         ;
 
 if_tail:
-          %prec IFX                     { $$ = nodeType::make_ops(); }
+          %prec IFX                     { $$ = {}; }
         | ELSE stmt                     { $$ = move($2); }
-        
 
 stmt_list:
           stmt                  { $$ = move(nodeType::make_ops(move($1))); }
