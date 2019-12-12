@@ -173,7 +173,11 @@ void exFor(const operatorNode &p) {
     ex(*init);
     auto &[cond, stmt] = get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
         get<operatorNode>(whileNode->innerNode).operands.value());
-    exLoop(*cond, *stmt, *next);
+    if (holds_alternative<vector<unique_ptr<nodeType>>>(cond->innerNode)) {
+        exLoop(*nodeType::make_constant(1), *stmt, *next);
+    } else {
+        exLoop(*cond, *stmt, *next);
+    }
 }
 
 void exIf(const operatorNode &p) {

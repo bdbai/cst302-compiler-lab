@@ -175,7 +175,7 @@ void interpretFor(const operatorNode &p) {
     const auto &[cond, body] =
         get<pair<unique_ptr<nodeType>, unique_ptr<nodeType>>>(
             get<operatorNode>(whileNode->innerNode).operands.value());
-    for (interpret(*init); isTruthy(interpret(*cond).value());
+    for (interpret(*init); isTruthy(interpret(*cond).value_or(true));
          interpret(*next)) {
         try {
             interpret(*body);
