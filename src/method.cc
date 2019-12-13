@@ -131,5 +131,13 @@ unordered_multimap<string, method> methodMap = {
 variant<int32_t, double, string>
 method::call(vector<variant<int32_t, double, string>> params) const {
     return ((variant<int32_t, double, string>(*)(
-        vector<variant<int32_t, double, string>>))(this->nativeImpl))(params);
+        vector<variant<int32_t, double, string>>))(
+        get<void *>(this->nativeImpl)))(params);
+}
+optional<reference_wrapper<func>> method::getAsFunc() const {
+    if (holds_alternative<shared_ptr<func>>(this->nativeImpl)) {
+        return *get<shared_ptr<func>>(this->nativeImpl);
+    } else {
+        return {};
+    }
 }

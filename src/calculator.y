@@ -10,6 +10,7 @@
     #include <vector>
     using namespace std;
     #include "nodeType.h"
+    #include "func.h"
 }
 %{
 #include <cstdio>
@@ -32,6 +33,7 @@ yy::parser::symbol_type yylex() {
 /* prototypes */
 void before_processing();
 int ex(nodeType &p);
+void exFunc(shared_ptr<func> f);
 void after_processing();
 void yyerror(char *s);
 %}
@@ -40,7 +42,7 @@ void yyerror(char *s);
 %token <double> DECIMAL
 %token <string> STRING
 %token <string> VARIABLE
-%token WHILE IF PRINT FOR BREAK CONTINUE
+%token WHILE IF PRINT FOR BREAK CONTINUE FN RETURN
 %token '(' ')' '{' '}' ';' ','
 %nonassoc IFX
 %nonassoc ELSE
@@ -55,6 +57,8 @@ void yyerror(char *s);
 %type <unique_ptr<nodeType>> stmt expr stmt_list stmt_expr stmt_expr_opt expr_opt
 %type <vector<unique_ptr<nodeType>>> param_list param_list_opt
 %type <optional<unique_ptr<nodeType>>> if_tail
+%type <symbol> fn_param
+%type <vector<symbol>> fn_param_list fn_param_list_opt
 
 %code {
     using namespace yy;
@@ -67,8 +71,31 @@ program:
 
 function:
           function stmt         { ex(*$2); }
+        | function FN VARIABLE '(' fn_param_list_opt ')' VARIABLE '{' stmt_list '}' {
+          exFunc(func::make_func($3, $5, $7, move($9)));
+        }
+        | function FN VARIABLE '(' fn_param_list_opt ')' '{' stmt_list '}' {
+          exFunc(func::make_func($3, $5, "void", move($8)));
+        }
         | /* NULL */
         ;
+
+fn_param_list_opt:
+          fn_param_list         { $$ = $1; }
+        | /* NULL */            { $$ = {}; }
+        ;
+
+fn_param_list:
+          fn_param              { $$ = { $1 }; }
+        | fn_param_list ',' fn_param {
+          $3.ilid = $1.size();
+          $1.push_back($3);
+          $$ = $1;
+        }
+        ;
+
+fn_param:
+          VARIABLE VARIABLE     { $$ = func::make_param($2, $1); }
 
 stmt_expr_opt:
           stmt_expr             { $$ = move($1); }
@@ -83,6 +110,8 @@ expr_opt:
 stmt:
           ';'                            { $$ = nodeType::make_ops(); }
         | CONTINUE ';'                   { $$ = nodeType::make_op(token::CONTINUE); }
+        | RETURN expr ';'                { $$ = nodeType::make_op(token::RETURN, move($2)); }
+        | RETURN ';'                     { $$ = nodeType::make_op(token::RETURN); }
         | BREAK ';'                      { $$ = nodeType::make_op(token::BREAK); }
         | stmt_expr ';'                  { $$ = move($1); }
         | WHILE '(' expr ')' stmt        { $$ = nodeType::make_op(token::WHILE, move($3), move($5)); }

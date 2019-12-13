@@ -1,33 +1,59 @@
 #include "compiler.h"
 
+auto fn = func::make_func("Main", {}, "void", nodeType::make_ops());
+Context ctx(fn);
+
 void before_processing() {
     Lexer::isCompiler = true;
-    cout << ".assembly calculator {} " << endl
-         << ".method public hidebysig static void Main () cil managed " << endl
-         << "{" << endl;
+    cout << ".assembly calculator {} " << endl;
+    beginFunction(cout);
+}
+
+void beginFunction(ostream &out) {
+    out << ".method public hidebysig static " << ctx.currentFunc->returnType
+        << " " << ctx.currentFunc->name << " (";
+    bool first = true;
+    for (const auto &param : ctx.currentFunc->params) {
+        if (first) {
+            first = false;
+            out << '\n';
+        }
+        out << '\t' << '\t' << param.type << endl;
+    }
+    out << ") cil managed " << endl << "{" << endl;
 }
 
 void after_processing() {
+    endFunction(cout);
+    for (const auto &funcIl : funcIls) {
+        cout << funcIl;
+    }
+}
+
+void endFunction(ostream &out) {
     if (symbols.size() > 0) {
         // Print locals
-        cout << "\t.locals init (" << endl;
+        out << "\t.locals init (" << endl;
         bool first = true;
         for (const auto &[_, sym] : symbols) {
             if (first) {
                 first = false;
             } else {
-                cout << ',' << endl;
+                out << ',' << endl;
             }
-            cout << "\t\t[" << sym.ilid << "] " << sym.type;
+            out << "\t\t[" << sym.ilid << "] " << sym.type;
         }
-        cout << endl << "\t)" << endl;
+        out << endl << "\t)" << endl;
     }
     // Print buffered CIL code
-    cout << "\t.maxstack " << maxStack << endl
-         << "\t.entrypoint" << endl
-         << ilbuf.str();
+    out << "\t.maxstack " << ctx.maxStack << endl;
+    if (ctx.currentFunc->name == "Main") {
+        out << "\t.entrypoint" << endl;
+    }
+    out << ctx.ilbuf.str();
+    out << "\tret" << endl;
     // Print tail
-    cout << "\tret" << endl << "}" << endl;
+    out << "}" << endl;
 }
 
 void convertType(const string &typeFrom, const string &typeTo) {
@@ -35,9 +61,9 @@ void convertType(const string &typeFrom, const string &typeTo) {
         return;
     }
     if (typeFrom == "int32" && typeTo == "float64") {
-        ilbuf << "\tconv.r8" << endl;
+        ctx.ilbuf << "\tconv.r8" << endl;
     } else if (typeFrom == "float64" && typeTo == "int32") {
-        ilbuf << "\tconv.i4" << endl;
+        ctx.ilbuf << "\tconv.i4" << endl;
     } else {
         cerr << "Cannot convert " << typeFrom << " to " << typeTo << endl;
         abort();
@@ -45,6 +71,8 @@ void convertType(const string &typeFrom, const string &typeTo) {
 }
 void convertType(const string &typeFrom, const ExpectedType expecting) {
     switch (expecting) {
+    case ExpectedType::Any:
+        break;
     case ExpectedType::Decimal:
         convertType(typeFrom, "float64");
         break;
@@ -68,23 +96,22 @@ void exAssign(const operatorNode &opr) {
     auto &expr = *expr_ptr;
     const auto &variableNode = get<symbolNode>(id.innerNode);
     const auto &type = expr.inferType();
-    auto ctx = Context();
-    ctx.expecting = Context::typeStringToExpected(type);
-    ex(expr, ctx);
+    ex(expr, Context::typeStringToExpected(type));
     const auto symbolIt = symbols.find(variableNode.symbol);
     if (symbolIt == symbols.end()) {
         // Declare a new variable
         symbol sym;
         sym.literal = variableNode.symbol;
         sym.ilid = symbols.size();
+        sym.ilpostfix = "loc";
         sym.type = type;
         symbols[variableNode.symbol] = sym;
     } else {
         convertType(type, symbolIt->second.type);
     }
     const auto &sym = symbols[variableNode.symbol];
-    ilbuf << "\tstloc " << sym.ilid << endl;
-    currentStack--;
+    ctx.ilbuf << "\tst" << sym.ilpostfix << ' ' << sym.ilid << endl;
+    ctx.currentStack--;
 }
 
 void exBin(const operatorNode &opr) {
@@ -105,31 +132,31 @@ void exBin(const operatorNode &opr) {
     if (opr.operatorToken == token::SHL || opr.operatorToken == token::SHR) {
         commonType = "int32";
     }
-    auto ctx = Context();
-    ctx.expecting = Context::typeStringToExpected(commonType);
-    ex(*opr1, ctx);
-    ex(*opr2, ctx);
+    auto expecting = Context::typeStringToExpected(commonType);
+    ex(*opr1, expecting);
+    ex(*opr2, expecting);
     if (commonType == "int32" || commonType == "float64") {
-        ilbuf << '\t' << tokenToOperator.at(opr.operatorToken) << endl;
+        ctx.ilbuf << '\t' << tokenToOperator.at(opr.operatorToken) << endl;
         // Negate negative operators
         switch (opr.operatorToken) {
         case token::GE:
         case token::LE:
         case token::NE:
-            ilbuf << "\tldc.i4.0" << endl;
-            ilbuf << "\tceq" << endl;
+            ctx.ilbuf << "\tldc.i4.0" << endl;
+            ctx.ilbuf << "\tceq" << endl;
             break;
         }
     } else if (commonType == "string" && opr.operatorToken == '+') {
-        ilbuf << "\tcall string "
-                 "[System.Private.CoreLib]System.String::Concat(string, string)"
-              << endl;
+        ctx.ilbuf
+            << "\tcall string "
+               "[System.Private.CoreLib]System.String::Concat(string, string)"
+            << endl;
     } else {
         cerr << "Cannot perform binary operation " << opr.operatorToken
              << " on " << type1 << " and " << type2 << endl;
         abort();
     }
-    currentStack -= 1;
+    ctx.currentStack -= 1;
 }
 
 void exLoop(nodeType &condNode, nodeType &bodyNode,
@@ -139,25 +166,25 @@ void exLoop(nodeType &condNode, nodeType &bodyNode,
     if (nextNode.has_value()) {
         nextLabel = ++label;
     }
-    continueJump.push(nextLabel);
-    breakJump.push({});
-    ilbuf << "\tbr.s LABEL" << checkLabel << endl;
-    ilbuf << "\tLABEL" << loopLabel << ": ";
-    ex(bodyNode);
+    ctx.continueJump.push(nextLabel);
+    ctx.breakJump.push({});
+    ctx.ilbuf << "\tbr.s LABEL" << checkLabel << endl;
+    ctx.ilbuf << "\tLABEL" << loopLabel << ": ";
+    ex(bodyNode, ExpectedType::None);
     if (nextNode.has_value()) {
-        ilbuf << "\tLABEL" << nextLabel << ": ";
+        ctx.ilbuf << "\tLABEL" << nextLabel << ": ";
         ex(nextNode.value());
     }
-    ilbuf << "\tLABEL" << checkLabel << ": ";
-    ex(condNode);
-    ilbuf << "\tbrtrue.s LABEL" << loopLabel << endl;
-    currentStack--;
-    continueJump.pop();
-    const auto breakLabel = breakJump.top();
+    ctx.ilbuf << "\tLABEL" << checkLabel << ": ";
+    ex(condNode, ExpectedType::Any);
+    ctx.ilbuf << "\tbrtrue.s LABEL" << loopLabel << endl;
+    ctx.currentStack--;
+    ctx.continueJump.pop();
+    const auto breakLabel = ctx.breakJump.top();
     if (breakLabel.has_value()) {
-        ilbuf << "\tLABEL" << breakLabel.value() << ": ";
+        ctx.ilbuf << "\tLABEL" << breakLabel.value() << ": ";
     }
-    breakJump.pop();
+    ctx.breakJump.pop();
 }
 
 void exWhile(const operatorNode &p) {
@@ -190,82 +217,87 @@ void exIf(const operatorNode &p) {
             [](const pair<unique_ptr<nodeType>, unique_ptr<nodeType>> &ifBody) {
                 const auto &[condNodePtr, bodyNodePtr] = ifBody;
                 const auto falseLabel = ++label;
-                ex(*condNodePtr);
-                ilbuf << "\tbrfalse.s LABEL" << falseLabel << endl;
-                currentStack--;
-                ex(*bodyNodePtr);
-                ilbuf << "\tLABEL" << falseLabel << ": ";
+                ex(*condNodePtr, ExpectedType::Any);
+                ctx.ilbuf << "\tbrfalse.s LABEL" << falseLabel << endl;
+                ctx.currentStack--;
+                ex(*bodyNodePtr, ExpectedType::None);
+                ctx.ilbuf << "\tLABEL" << falseLabel << ": ";
             },
             [](const tuple<unique_ptr<nodeType>, unique_ptr<nodeType>,
                            unique_ptr<nodeType>> &ifElseBody) {
                 const auto &[condNodePtr, bodyNodePtr, elseNodePtr] =
                     ifElseBody;
                 const auto falseLabel = ++label, nextLabel = ++label;
-                ex(*condNodePtr);
-                ilbuf << "\tbrfalse.s LABEL" << falseLabel << endl;
-                currentStack--;
-                ex(*bodyNodePtr);
-                ilbuf << "\tbr.s LABEL" << nextLabel << endl;
-                ilbuf << "\tLABEL" << falseLabel << ": ";
-                ex(*elseNodePtr);
-                ilbuf << "\tLABEL" << nextLabel << ": ";
+                ex(*condNodePtr, ExpectedType::Any);
+                ctx.ilbuf << "\tbrfalse.s LABEL" << falseLabel << endl;
+                ctx.currentStack--;
+                ex(*bodyNodePtr, ExpectedType::None);
+                ctx.ilbuf << "\tbr.s LABEL" << nextLabel << endl;
+                ctx.ilbuf << "\tLABEL" << falseLabel << ": ";
+                ex(*elseNodePtr, ExpectedType::None);
+                ctx.ilbuf << "\tLABEL" << nextLabel << ": ";
             }},
         p.operands.value());
 }
 void exPrint(const operatorNode &p) {
     auto &oprNode = *get<unique_ptr<nodeType>>(p.operands.value());
     const auto &type = oprNode.inferType();
-    ex(oprNode);
-    ilbuf << "\tcall void "
-             "[System.Console]System.Console::"
-             "WriteLine("
-          << type << ")" << endl;
-    currentStack--;
+    ex(oprNode, Context::typeStringToExpected(type));
+    ctx.ilbuf << "\tcall void "
+                 "[System.Console]System.Console::"
+                 "WriteLine("
+              << type << ")" << endl;
+    ctx.currentStack--;
+}
+void exUminus(const operatorNode &p) {
+    auto &opr = get<unique_ptr<nodeType>>(p.operands.value());
+    ex(*opr, Context::typeStringToExpected(opr->inferType()));
+    ctx.ilbuf << "\tneg" << endl;
 }
 
 void exContinue() {
-    if (continueJump.empty()) {
+    if (ctx.continueJump.empty()) {
         cerr << "continue statement is not allowed" << endl;
         abort();
     }
-    ilbuf << "\tbr.s LABEL" << continueJump.top() << endl;
+    ctx.ilbuf << "\tbr.s LABEL" << ctx.continueJump.top() << endl;
 }
 void exBreak() {
-    if (breakJump.empty()) {
+    if (ctx.breakJump.empty()) {
         cerr << "break statement is not allowed" << endl;
         abort();
     }
-    auto &jumpTop = breakJump.top();
+    auto &jumpTop = ctx.breakJump.top();
     if (!jumpTop.has_value()) {
         jumpTop.emplace(++label);
     }
-    ilbuf << "\tbr.s LABEL" << jumpTop.value() << endl;
+    ctx.ilbuf << "\tbr.s LABEL" << jumpTop.value() << endl;
 }
 
 void ex(nodeType &p) {
     ex(p, {});
-    while (currentStack > 0) {
-        ilbuf << "\tpop" << endl;
-        currentStack--;
+    while (ctx.currentStack > 0) {
+        ctx.ilbuf << "\tpop" << endl;
+        ctx.currentStack--;
     }
 }
 
-void ex(nodeType &p, Context ctx) {
+void ex(nodeType &p, ExpectedType expecting) {
     visit(
         overloaded{
             [](constantNode &conNode) {
                 visit(overloaded{[](const int value) {
-                                     ilbuf << "\tldc.i4 " << value << endl;
+                                     ctx.ilbuf << "\tldc.i4 " << value << endl;
                                  },
                                  [](const double value) {
-                                     ilbuf << "\tldc.r8 " << value << endl;
+                                     ctx.ilbuf << "\tldc.r8 " << value << endl;
                                  },
                                  [](const string &value) {
-                                     ilbuf << "\tldstr " << value << endl;
+                                     ctx.ilbuf << "\tldstr " << value << endl;
                                  }},
                       conNode.innerValue);
-                currentStack++;
-                maxStack = max(maxStack, currentStack);
+                ctx.currentStack++;
+                ctx.maxStack = max(ctx.maxStack, ctx.currentStack);
             },
             [](operatorNode &oprNode) {
                 switch (oprNode.operatorToken) {
@@ -281,6 +313,28 @@ void ex(nodeType &p, Context ctx) {
                 case token::BREAK:
                     exBreak();
                     break;
+                case token::RETURN:
+                    if (ctx.currentFunc->returnType == "void") {
+                        if (oprNode.operands.has_value()) {
+                            cerr << "A function with return type \"void\" "
+                                    "cannot return with any value"
+                                 << endl;
+                            abort();
+                        }
+                    } else {
+                        if (!oprNode.operands.has_value()) {
+                            cerr << "A function with non-void return type must "
+                                    "return with a value"
+                                 << endl;
+                            abort();
+                        }
+                        ex(*get<unique_ptr<nodeType>>(oprNode.operands.value()),
+                           Context::typeStringToExpected(
+                               ctx.currentFunc->returnType));
+                        ctx.currentStack--;
+                    }
+                    ctx.ilbuf << "\tret" << endl;
+                    break;
                 case token::IF:
                     exIf(oprNode);
                     break;
@@ -291,8 +345,7 @@ void ex(nodeType &p, Context ctx) {
                     exPrint(oprNode);
                     break;
                 case token::UMINUS:
-                    ex(*get<unique_ptr<nodeType>>(oprNode.operands.value()));
-                    ilbuf << "\tneg" << endl;
+                    exUminus(oprNode);
                     break;
                 default:
                     // Deal with binary operators
@@ -307,13 +360,13 @@ void ex(nodeType &p, Context ctx) {
                     return;
                 }
                 const auto &sym = symbols[symNode.symbol];
-                ilbuf << "\tldloc " << sym.ilid << endl;
-                currentStack++;
-                maxStack = max(maxStack, currentStack);
+                ctx.ilbuf << "\tld" << sym.ilpostfix << " " << sym.ilid << endl;
+                ctx.currentStack++;
+                ctx.maxStack = max(ctx.maxStack, ctx.currentStack);
             },
             [](vector<unique_ptr<nodeType>> &nodes) {
                 if (nodes.size() == 0) {
-                    ilbuf << "\tnop" << endl;
+                    ctx.ilbuf << "\tnop" << endl;
                 } else {
                     for (const auto &node : nodes) {
                         ex(*node);
@@ -326,32 +379,35 @@ void ex(nodeType &p, Context ctx) {
                     const auto &resolvedMethod = method.value().get();
                     for (size_t i = 0; i < resolvedMethod.parameters.size();
                          i++) {
-                        Context ctx;
-                        ctx.expecting = Context::typeStringToExpected(
-                            resolvedMethod.parameters[i]);
-                        ex(*cNode.params[i], ctx);
+                        ex(*cNode.params[i], Context::typeStringToExpected(
+                                                 resolvedMethod.parameters[i]));
                     }
                     if (resolvedMethod.isVirtual) {
-                        ilbuf << "\tcallvirt ";
+                        ctx.ilbuf << "\tcallvirt ";
                     } else {
-                        ilbuf << "\tcall ";
+                        ctx.ilbuf << "\tcall ";
                     }
                     if (resolvedMethod.isInstance) {
-                        ilbuf << "instance ";
+                        ctx.ilbuf << "instance ";
                     }
-                    ilbuf << resolvedMethod.returnType << ' ' << '['
-                          << resolvedMethod.assemblyName << ']'
-                          << resolvedMethod.typeQualifier << ':' << ':'
-                          << resolvedMethod.methodName << '(';
+                    ctx.ilbuf << resolvedMethod.returnType << ' ';
+                    if (resolvedMethod.assemblyName != "calculator") {
+                        ctx.ilbuf << '[' << resolvedMethod.assemblyName << ']'
+                                  << resolvedMethod.typeQualifier << ':' << ':';
+                    }
+                    ctx.ilbuf << resolvedMethod.methodName << '(';
                     for (size_t i = 0; i < resolvedMethod.parameters.size();
                          i++) {
                         if (i) {
-                            ilbuf << ',' << ' ';
+                            ctx.ilbuf << ',' << ' ';
                         }
-                        ilbuf << resolvedMethod.parameters[i];
+                        ctx.ilbuf << resolvedMethod.parameters[i];
                     }
-                    ilbuf << ')' << endl;
-                    currentStack -= resolvedMethod.parameters.size() - 1;
+                    ctx.ilbuf << ')' << endl;
+                    ctx.currentStack -= resolvedMethod.parameters.size() - 1;
+                    if (resolvedMethod.returnType == "void") {
+                        ctx.currentStack--;
+                    }
                 } else {
                     cerr << "Cannot find an overloaded method: " << cNode.func
                          << endl;
@@ -359,7 +415,40 @@ void ex(nodeType &p, Context ctx) {
                 }
             }},
         p.innerNode);
-    if (ctx.expecting != ExpectedType::None) {
-        convertType(p.inferType(), ctx.expecting);
+    if (expecting != ExpectedType::None && expecting != ExpectedType::Any) {
+        convertType(p.inferType(), expecting);
     }
+}
+
+void exFunc(shared_ptr<func> fn) {
+    // Save old context and symbols
+    auto globalCtx(move(ctx));
+    auto globalSymbols(move(symbols));
+
+    // Arrange symbols
+    symbols = {};
+    for (size_t i = 0; i < fn->params.size(); i++) {
+        symbol sym(fn->params[i]);
+        symbols[sym.literal] = sym;
+    }
+
+    // Prepare new context
+    Context newCtx(fn);
+    newCtx.ilbuf = stringstream();
+    ctx = move(newCtx);
+
+    // Walk through function statements
+    stringstream newbuf;
+    beginFunction(newbuf);
+    for (auto &stmt : fn->bodyStmts) {
+        ex(*stmt);
+    }
+    endFunction(newbuf);
+
+    // Recover context
+    symbols = move(globalSymbols);
+    ctx = move(globalCtx);
+
+    // Save IL
+    funcIls.push_back(newbuf.str());
 }

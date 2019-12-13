@@ -249,6 +249,14 @@ optional<variant<int32_t, double, string>> interpret(nodeType &p) {
                     throw continueException();
                 case token::BREAK:
                     throw breakException();
+                case token::RETURN:
+                    if (oprNode.operands.has_value()) {
+                        throw returnException(
+                            interpret(*get<unique_ptr<nodeType>>(
+                                oprNode.operands.value())));
+                    } else {
+                        throw returnException({});
+                    }
                 case token::IF:
                     interpretIf(oprNode);
                     break;
@@ -296,7 +304,33 @@ optional<variant<int32_t, double, string>> interpret(nodeType &p) {
                             convertType(interpret(*cNode.params[i]).value(),
                                         parType, conType));
                     }
-                    return method.value().get().call(params);
+                    const auto &fn = realMethod.getAsFunc();
+                    if (fn.has_value()) {
+                        // Self defined function
+                        // Arrange locals
+                        auto globalSymbols = symbols;
+                        symbols = {};
+                        for (size_t i = 0; i < params.size(); i++) {
+                            symbol sym(fn.value().get().params[i]);
+                            sym.value = params[i];
+                            symbols[sym.literal] = sym;
+                        }
+                        try {
+                            for (auto &stmt : fn.value().get().bodyStmts) {
+                                interpret(*stmt);
+                            }
+                            // Recover locals
+                            symbols = globalSymbols;
+                            return {};
+                        } catch (const returnException &ret) {
+                            // Recover locals
+                            symbols = globalSymbols;
+                            return ret.returnValue;
+                        }
+                    } else {
+                        // Built-in function
+                        return method.value().get().call(params);
+                    }
                 } else {
                     cerr << "Cannot find an overloaded method: " << cNode.func
                          << endl;
@@ -304,4 +338,9 @@ optional<variant<int32_t, double, string>> interpret(nodeType &p) {
                 }
             }},
         p.innerNode);
+}
+
+void exFunc(shared_ptr<func> fn) {
+    const auto name = fn->name;
+    func::definedFunctions.insert(make_pair(name, fn));
 }

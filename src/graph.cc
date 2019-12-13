@@ -34,15 +34,17 @@ const unordered_map<int, const char *> tokenToStr = {
     {token::UMINUS, "[_]"},
     {token::FOR, "for"},
     {token::CONTINUE, "continue"},
-    {token::BREAK, "break"}};
+    {token::BREAK, "break"},
+    {token::RETURN, "return"}};
 
 int del = 1; /* distance of graph columns */
 int eps = 3; /* distance of graph lines */
+int graphNumber = 0;
 
 /* interface for drawing (can be replaced by "real" graphic using GD or other)
  */
 void graphInit(void);
-void graphFinish();
+void graphFinish(char *desc);
 void graphBox(char *s, int *w, int *h);
 void graphDrawBox(char *s, int c, int l);
 void graphDrawArrow(int c1, int l1, int c2, int l2);
@@ -57,7 +59,29 @@ void ex(nodeType &p) {
 
     graphInit();
     exNode(p, 0, 0, &rte, &rtm);
-    graphFinish();
+    graphFinish(("Graph " + to_string(graphNumber++)).data());
+}
+void exFunc(shared_ptr<func> fn) {
+    int rte, rtm;
+
+    graphInit();
+    exNode(nodeType(move(fn->bodyStmts)), 0, 0, &rte, &rtm);
+    stringstream desc;
+    desc << "Function " << fn->name << '(';
+    bool first = true;
+    for (const auto &param : fn->params) {
+        if (first) {
+            first = false;
+        } else {
+            desc << ", ";
+        }
+        desc << param.literal << ' ' << param.type;
+    }
+    desc << ')';
+    if (fn->returnType != "void") {
+        desc << ' ' << fn->returnType;
+    }
+    graphFinish(desc.str().data());
 }
 
 /*c----cm---ce---->                       drawing of leaf-nodes
@@ -165,7 +189,7 @@ void exNode(const nodeType &p, int c, int l, /* start column and line of node */
                     },
                     oprNode.operands.value());
             },
-            [](const symbolNode &symNode)
+            [](const symbolNode &)
                 -> vector<reference_wrapper<const nodeType>> {
                 return vector<reference_wrapper<const nodeType>>();
             },
@@ -224,7 +248,6 @@ void exNode(const nodeType &p, int c, int l, /* start column and line of node */
 #define cmax 200
 
 char graph[lmax][cmax]; /* array for ASCII-Graphic */
-int graphNumber = 0;
 
 void graphTest(int l, int c) {
     int ok;
@@ -253,7 +276,7 @@ void graphInit(void) {
     }
 }
 
-void graphFinish() {
+void graphFinish(char *desc) {
     int i, j;
     for (i = 0; i < lmax; i++) {
         for (j = cmax - 1; j > 0 && graph[i][j] == ' '; j--)
@@ -266,7 +289,7 @@ void graphFinish() {
     }
     for (i = lmax - 1; i > 0 && graph[i][0] == 0; i--)
         ;
-    printf("\n\nGraph %d:\n", graphNumber++);
+    printf("\n\n%s:\n", desc);
     for (j = 0; j <= i; j++)
         printf("\n%s", graph[j]);
     printf("\n");

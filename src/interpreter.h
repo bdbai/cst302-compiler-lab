@@ -8,6 +8,13 @@
 
 class breakException : public exception {};
 class continueException : public exception {};
+class returnException : public exception {
+  public:
+    returnException(
+        const optional<variant<int32_t, double, string>> &returnValue)
+        : returnValue(returnValue) {}
+    optional<variant<int32_t, double, string>> returnValue;
+};
 
 void before_processing();
 void after_processing();

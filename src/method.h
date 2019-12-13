@@ -4,6 +4,8 @@
 #include <vector>
 #include <unordered_map>
 #include <variant>
+#include <memory>
+class func;
 
 using namespace std;
 
@@ -17,13 +19,14 @@ template <typename T, auto fn> class callerHelper {
 
 class method {
   private:
-    void *nativeImpl;
+    variant<void *, shared_ptr<func>> nativeImpl;
 
   public:
     method(const string alias, const bool isInstance, const bool isVirtual,
            const string returnType, const string assemblyName,
            const string typeQualifier, const string methodName,
-           const vector<string> parameters, void *nativeImpl)
+           const vector<string> parameters,
+           variant<void *, shared_ptr<func>> nativeImpl)
         : nativeImpl(nativeImpl), alias(alias), isInstance(isInstance),
           isVirtual(isVirtual), returnType(returnType),
           assemblyName(assemblyName), typeQualifier(typeQualifier),
@@ -38,6 +41,7 @@ class method {
     vector<string> parameters;
     variant<int32_t, double, string>
     call(vector<variant<int32_t, double, string>>) const;
+    optional<reference_wrapper<func>> getAsFunc() const;
 };
 
 string string_replace(const string &haystack, const string &needle,

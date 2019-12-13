@@ -14,6 +14,8 @@ extern bool closingIf;
 %}
 
 %%
+"fn"                    return yy::parser::token::FN;
+"return"                return yy::parser::token::RETURN;
 "for"                   return yy::parser::token::FOR;
 "while"                 return yy::parser::token::WHILE;
 "break"                 return yy::parser::token::BREAK;

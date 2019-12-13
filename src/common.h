@@ -20,4 +20,5 @@ const unordered_map<int, const char *> tokenToOperator = {
 void before_processing();
 void after_processing();
 void ex(nodeType &p);
+void exFunc(shared_ptr<func> f);
 #endif
