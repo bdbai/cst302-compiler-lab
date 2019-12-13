@@ -48,6 +48,8 @@ void yyerror(char *s);
 %nonassoc ELSE
 
 %nonassoc '=' ADDAS MINAS MULAS DIVAS REMAS SHLAS SHRAS
+%left AND OR
+%nonassoc '!'
 %left GE LE EQ NE '>' '<'
 %left SHL SHR
 %left '+' '-'
@@ -163,6 +165,7 @@ expr:
         | DECIMAL               { $$ = nodeType::make_constant($1); }
         | VARIABLE              { $$ = nodeType::make_symbol($1); }
         | '-' expr %prec UMINUS { $$ = nodeType::make_op(token::UMINUS, move($2)); }
+        | '!' expr %prec UMINUS { $$ = nodeType::make_op(token::EQ, move($2), nodeType::make_constant(0)); }
         | expr '+' expr         { $$ = nodeType::make_op('+', move($1), move($3)); }
         | expr '-' expr         { $$ = nodeType::make_op('-', move($1), move($3)); }
         | expr '*' expr         { $$ = nodeType::make_op('*', move($1), move($3)); }
@@ -176,6 +179,8 @@ expr:
         | expr LE expr          { $$ = nodeType::make_op(token::LE, move($1), move($3)); }
         | expr NE expr          { $$ = nodeType::make_op(token::NE, move($1), move($3)); }
         | expr EQ expr          { $$ = nodeType::make_op(token::EQ, move($1), move($3)); }
+        | expr AND expr         { $$ = nodeType::make_op(token::AND, nodeType::make_op(token::NE, move($1), nodeType::make_constant(0)), nodeType::make_op(token::NE, move($3), nodeType::make_constant(0))); }
+        | expr OR expr          { $$ = nodeType::make_op(token::OR, nodeType::make_op(token::EQ, move($1), nodeType::make_constant(1)), nodeType::make_op(token::EQ, move($3), nodeType::make_constant(1))); }
         | '(' expr ')'          { $$ = move($2); }
         | VARIABLE '(' param_list_opt ')' { $$ = nodeType::make_call($1, move($3)); }
         ;

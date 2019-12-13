@@ -78,6 +78,10 @@ T interpretBinOpr(int operatorToken, const T opr1, const T opr2) {
         return opr1 == opr2;
     case token::NE:
         return opr1 != opr2;
+    case token::AND:
+        return opr1 && opr2;
+    case token::OR:
+        return opr1 || opr2;
     default:
         cerr << "Unknown operator type: " << (char)operatorToken << endl;
         abort();

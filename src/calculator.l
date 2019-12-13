@@ -53,7 +53,7 @@ extern bool closingIf;
                             }
                         }
 \"(\\.|[^\"])*\"        return yy::parser::make_STRING(string(yytext));
-[-()<>=+*/%;.,]         return *yytext;
+[!-()<>=+*/%;.,]         return *yytext;
 "{"                     {
     blockLevel++;
     return *yytext;
@@ -67,6 +67,8 @@ extern bool closingIf;
     blockLevel--;
     return *yytext;
 }
+"||"                    return yy::parser::token::OR;
+"&&"                    return yy::parser::token::AND;
 "<<"                    return yy::parser::token::SHL;
 ">>"                    return yy::parser::token::SHR;
 ">="                    return yy::parser::token::GE;
