@@ -77,6 +77,37 @@ unordered_multimap<string, method> methodMap = {
       {"float64"},
       (void *)&callerHelper<double, static_cast<double (*)(double)>(
                                         &abs)>::inputOutput}},
+    {"round",
+     {"round",
+      false,
+      false,
+      "float64",
+      "System.Private.CoreLib",
+      "System.Math",
+      "Round",
+      {"float64"},
+      (void *)(variant<int32_t, double, string> (*)(
+          vector<variant<int32_t, double, string>>))(
+          [](vector<variant<int32_t, double, string>> input)
+              -> variant<int32_t, double, string> {
+              return round(get<double>(input[0]));
+          })}},
+    {"round",
+     {"round",
+      false,
+      false,
+      "float64",
+      "System.Private.CoreLib",
+      "System.Math",
+      "Round",
+      {"float64", "int32"},
+      (void *)(variant<int32_t, double, string> (*)(
+          vector<variant<int32_t, double, string>>))(
+          [](vector<variant<int32_t, double, string>> input)
+              -> variant<int32_t, double, string> {
+              auto p = powl(10, get<int32_t>(input[1]));
+              return (double)(round(p * get<double>(input[0])) / p);
+          })}},
     {"input",
      {"input",
       false,
