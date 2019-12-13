@@ -126,6 +126,36 @@ unordered_multimap<string, method> methodMap = {
               -> variant<int32_t, double, string> {
               return stoi(unquote(get<string>(input[0])));
           })}},
+    {"toString",
+     {"toString",
+      true,
+      false,
+      "string",
+      "System.Private.CoreLib",
+      "System.Int32",
+      "ToString",
+      {"int32"},
+      (void *)(variant<int32_t, double, string> (*)(
+          vector<variant<int32_t, double, string>>))(
+          [](vector<variant<int32_t, double, string>> input)
+              -> variant<int32_t, double, string> {
+              return quote(to_string(get<int32_t>(input[0])));
+          })}},
+    {"toString",
+     {"toString",
+      true,
+      false,
+      "string",
+      "System.Private.CoreLib",
+      "System.Double",
+      "ToString",
+      {"float64"},
+      (void *)(variant<int32_t, double, string> (*)(
+          vector<variant<int32_t, double, string>>))(
+          [](vector<variant<int32_t, double, string>> input)
+              -> variant<int32_t, double, string> {
+              return quote(to_string(get<double>(input[0])));
+          })}},
 };
 
 variant<int32_t, double, string>

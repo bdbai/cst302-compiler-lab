@@ -384,6 +384,18 @@ void ex(nodeType &p, ExpectedType expecting) {
                          i++) {
                         ex(*cNode.params[i], Context::typeStringToExpected(
                                                  resolvedMethod.parameters[i]));
+                        if (i == 0 && resolvedMethod.isInstance) {
+                            symbol sym;
+                            sym.literal = "intermediate symbol";
+                            sym.ilid = ctx.currentLoc++;
+                            sym.ilpostfix = "loc";
+                            sym.type = cNode.params[i]->inferType();
+                            symbols[sym.literal + to_string(sym.ilid)] = sym;
+                            ctx.ilbuf << "\tst" << sym.ilpostfix << ' '
+                                      << sym.ilid << endl;
+                            ctx.ilbuf << "\tld" << sym.ilpostfix << 'a' << ' '
+                                      << sym.ilid << endl;
+                        }
                     }
                     if (resolvedMethod.isVirtual) {
                         ctx.ilbuf << "\tcallvirt ";
@@ -399,8 +411,8 @@ void ex(nodeType &p, ExpectedType expecting) {
                                   << resolvedMethod.typeQualifier << ':' << ':';
                     }
                     ctx.ilbuf << resolvedMethod.methodName << '(';
-                    for (size_t i = 0; i < resolvedMethod.parameters.size();
-                         i++) {
+                    for (size_t i = resolvedMethod.isInstance;
+                         i < resolvedMethod.parameters.size(); i++) {
                         if (i) {
                             ctx.ilbuf << ',' << ' ';
                         }
