@@ -1,0 +1,63 @@
+/**
+ * Demo: Temperature Converter
+ *
+ * In this program, we will demonstrate the following language features by
+ * implementing a simple temperature Converter:
+ *
+ * 1. Block comments and line comments;
+ * 2. Auto-infered data types (integer, double and string);
+ * 3. Variable names with multiple characters;
+ * 4. Binary operators (`+=`) and logical operators (`||`);
+ * 5. Control flow statements (`break`);
+ * 6. Function calls (`input`, `parseInt`, `parseDouble`, `readInput` and
+ *    `round`);
+ * 7. Function definition (`readInput`).
+ *
+ */
+
+print "+------------------------+";
+print "|                        |";
+print "| Temperature Converter  |";
+print "|                        |";
+print "+------------------------+\n\n";
+
+fn readInput(itemCount int32) int32 {
+    print "Please enter:";
+    i = parseInt(input());
+    while (i < 0 || i > itemCount) {
+        print "Wrong input. Please try again:";
+        i = parseInt(input());
+    }
+    return i;
+}
+
+selection = -1;
+while (1) {
+    print "Please choose the input temperature unit:";
+    print "1. degree Celsius (°C)";
+    print "2. degree Fahrenheit (°F)";
+    print "3. kelvin (K)";
+    print "Enter 0 to exit.\n";
+    selection = readInput(3);
+    if (selection == 0) {
+        break;
+    }
+    print "Please enter the temperature:";
+    dc = parseDouble(input());
+    if (selection == 1) {
+        // Do nothing
+    } else if (selection == 2) {
+        dc = (dc - 32) * 5 / 9;
+    } else if (selection == 3) {
+        dc -= 273.15;
+    }
+
+    print "\nThe output is:\n";
+    print "degree Celsius: " + toString(round(dc, 2));
+    print "degree Fahrenheit: " + toString(round(dc * 9 / 5 + 32, 2));
+    print "kelvin: " + toString(round(dc + 273.15, 2));
+    print "\nPress enter to continue...";
+    input();
+}
+
+print "Exiting...";
