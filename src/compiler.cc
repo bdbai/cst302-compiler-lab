@@ -36,6 +36,9 @@ void endFunction(ostream &out) {
         out << "\t.locals init (" << endl;
         bool first = true;
         for (const auto &[_, sym] : symbols) {
+            if (sym.ilpostfix != "loc") {
+                continue;
+            }
             if (first) {
                 first = false;
             } else {
@@ -102,7 +105,7 @@ void exAssign(const operatorNode &opr) {
         // Declare a new variable
         symbol sym;
         sym.literal = variableNode.symbol;
-        sym.ilid = symbols.size();
+        sym.ilid = ctx.currentLoc++;
         sym.ilpostfix = "loc";
         sym.type = type;
         symbols[variableNode.symbol] = sym;
@@ -168,7 +171,7 @@ void exLoop(nodeType &condNode, nodeType &bodyNode,
     }
     ctx.continueJump.push(nextLabel);
     ctx.breakJump.push({});
-    ctx.ilbuf << "\tbr.s LABEL" << checkLabel << endl;
+    ctx.ilbuf << "\tbr LABEL" << checkLabel << endl;
     ctx.ilbuf << "\tLABEL" << loopLabel << ": ";
     ex(bodyNode, ExpectedType::None);
     if (nextNode.has_value()) {
@@ -177,7 +180,7 @@ void exLoop(nodeType &condNode, nodeType &bodyNode,
     }
     ctx.ilbuf << "\tLABEL" << checkLabel << ": ";
     ex(condNode, ExpectedType::Any);
-    ctx.ilbuf << "\tbrtrue.s LABEL" << loopLabel << endl;
+    ctx.ilbuf << "\tbrtrue LABEL" << loopLabel << endl;
     ctx.currentStack--;
     ctx.continueJump.pop();
     const auto breakLabel = ctx.breakJump.top();
@@ -218,7 +221,7 @@ void exIf(const operatorNode &p) {
                 const auto &[condNodePtr, bodyNodePtr] = ifBody;
                 const auto falseLabel = ++label;
                 ex(*condNodePtr, ExpectedType::Any);
-                ctx.ilbuf << "\tbrfalse.s LABEL" << falseLabel << endl;
+                ctx.ilbuf << "\tbrfalse LABEL" << falseLabel << endl;
                 ctx.currentStack--;
                 ex(*bodyNodePtr, ExpectedType::None);
                 ctx.ilbuf << "\tLABEL" << falseLabel << ": ";
@@ -229,10 +232,10 @@ void exIf(const operatorNode &p) {
                     ifElseBody;
                 const auto falseLabel = ++label, nextLabel = ++label;
                 ex(*condNodePtr, ExpectedType::Any);
-                ctx.ilbuf << "\tbrfalse.s LABEL" << falseLabel << endl;
+                ctx.ilbuf << "\tbrfalse LABEL" << falseLabel << endl;
                 ctx.currentStack--;
                 ex(*bodyNodePtr, ExpectedType::None);
-                ctx.ilbuf << "\tbr.s LABEL" << nextLabel << endl;
+                ctx.ilbuf << "\tbr LABEL" << nextLabel << endl;
                 ctx.ilbuf << "\tLABEL" << falseLabel << ": ";
                 ex(*elseNodePtr, ExpectedType::None);
                 ctx.ilbuf << "\tLABEL" << nextLabel << ": ";
@@ -260,7 +263,7 @@ void exContinue() {
         cerr << "continue statement is not allowed" << endl;
         abort();
     }
-    ctx.ilbuf << "\tbr.s LABEL" << ctx.continueJump.top() << endl;
+    ctx.ilbuf << "\tbr LABEL" << ctx.continueJump.top() << endl;
 }
 void exBreak() {
     if (ctx.breakJump.empty()) {
@@ -271,7 +274,7 @@ void exBreak() {
     if (!jumpTop.has_value()) {
         jumpTop.emplace(++label);
     }
-    ctx.ilbuf << "\tbr.s LABEL" << jumpTop.value() << endl;
+    ctx.ilbuf << "\tbr LABEL" << jumpTop.value() << endl;
 }
 
 void ex(nodeType &p) {

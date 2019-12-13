@@ -16,6 +16,7 @@ class Context {
     stringstream ilbuf;
     size_t maxStack = 1;
     size_t currentStack = 0;
+    size_t currentLoc = 0;
     stack<size_t> continueJump;
     stack<optional<size_t>> breakJump;
     shared_ptr<func> currentFunc;

@@ -17,10 +17,10 @@ template <class... Ts> overloaded(Ts...)->overloaded<Ts...>;
 
 class symbol {
   public:
-    string literal;
-    int ilid;
-    string ilpostfix;
-    string type;
+    string literal = "";
+    int ilid = 0;
+    string ilpostfix = "";
+    string type = "!";
     optional<variant<int32_t, double, string>> value;
 };
 
