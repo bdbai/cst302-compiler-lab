@@ -54,7 +54,7 @@ void yyerror(char *s);
 %left '*' '/' '%'
 %nonassoc UMINUS
 
-%type <unique_ptr<nodeType>> stmt expr stmt_list stmt_expr stmt_expr_opt expr_opt
+%type <unique_ptr<nodeType>> stmt expr stmt_list stmt_list_opt stmt_expr stmt_expr_opt expr_opt
 %type <vector<unique_ptr<nodeType>>> param_list param_list_opt
 %type <optional<unique_ptr<nodeType>>> if_tail
 %type <symbol> fn_param
@@ -71,10 +71,10 @@ program:
 
 function:
           function stmt         { ex(*$2); }
-        | function FN VARIABLE '(' fn_param_list_opt ')' VARIABLE '{' stmt_list '}' {
+        | function FN VARIABLE '(' fn_param_list_opt ')' VARIABLE '{' stmt_list_opt '}' {
           exFunc(func::make_func($3, $5, $7, move($9)));
         }
-        | function FN VARIABLE '(' fn_param_list_opt ')' '{' stmt_list '}' {
+        | function FN VARIABLE '(' fn_param_list_opt ')' '{' stmt_list_opt '}' {
           exFunc(func::make_func($3, $5, "void", move($8)));
         }
         | /* NULL */
@@ -128,7 +128,7 @@ stmt:
           auto whileNode = nodeType::make_op(token::WHILE, move($5), move($9));
           $$ = nodeType::make_op(token::FOR, move($3), move(whileNode), move($7));
         }
-        | '{' stmt_list '}'              { $$ = move($2); }
+        | '{' stmt_list_opt '}'              { $$ = move($2); }
         ;
 
 stmt_expr:
@@ -147,6 +147,10 @@ stmt_expr:
 if_tail:
           %prec IFX                     { $$ = {}; }
         | ELSE stmt                     { $$ = move($2); }
+
+stmt_list_opt:
+          stmt_list             { $$ = move($1); }
+        | /* NULL */            { $$ = nodeType::make_ops();}
 
 stmt_list:
           stmt                  { $$ = move(nodeType::make_ops(move($1))); }
