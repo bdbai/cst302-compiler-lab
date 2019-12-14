@@ -5,8 +5,8 @@ Context ctx(fn);
 
 void before_processing() {
     Lexer::isCompiler = true;
-    cout << ".assembly calculator {} " << endl;
-    beginFunction(cout);
+    globalOut << ".assembly calculator {} " << endl;
+    beginFunction(globalOut);
 }
 
 void beginFunction(ostream &out) {
@@ -18,16 +18,17 @@ void beginFunction(ostream &out) {
             first = false;
             out << '\n';
         }
-        out << '\t' << '\t' << param.type << endl;
+        out << '\t' << param.type << endl;
     }
     out << ") cil managed " << endl << "{" << endl;
 }
 
 void after_processing() {
-    endFunction(cout);
+    endFunction(globalOut);
     for (const auto &funcIl : funcIls) {
-        cout << funcIl;
+        globalOut << funcIl;
     }
+    cout << globalOut.str();
 }
 
 void endFunction(ostream &out) {
