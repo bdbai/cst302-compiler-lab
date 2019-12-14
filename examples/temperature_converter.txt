@@ -53,9 +53,9 @@ while (1) {
     }
 
     print "\nThe output is:\n";
-    print "degree Celsius: " + toString(round(dc, 2));
-    print "degree Fahrenheit: " + toString(round(dc * 9 / 5 + 32, 2));
-    print "kelvin: " + toString(round(dc + 273.15, 2));
+    print "degree Celsius: " + toString(round(dc, 2)) + " °C";
+    print "degree Fahrenheit: " + toString(round(dc * 9 / 5 + 32, 2)) + " °F";
+    print "kelvin: " + toString(round(dc + 273.15, 2)) + " K";
     print "\nPress enter to continue...";
     input();
 }
