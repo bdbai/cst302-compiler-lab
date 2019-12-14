@@ -6,6 +6,7 @@
 #include "context.h"
 
 extern Context ctx;
+stringstream globalOut;
 list<string> funcIls;
 size_t label = 0;
 
