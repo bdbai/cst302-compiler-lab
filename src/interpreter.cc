@@ -35,9 +35,7 @@ void exAssign(const operatorNode &opr) {
         symbol sym;
         sym.literal = variableNode.symbol;
         sym.ilid = symbols.size();
-        // The `type` field is not used in interpreter since variant is used to
-        // check types
-        sym.type = "int32";
+        sym.type = expr.inferType();
         symbols[variableNode.symbol] = sym;
     } else {
         if (value.value().index() != symbolIt->second.value.value().index()) {
