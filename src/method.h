@@ -16,6 +16,10 @@ template <typename T, auto fn> class callerHelper {
     inputOutput(vector<variant<int32_t, double, string>> params) {
         return ((T(*)(T))(fn))(get<T>(params[0]));
     }
+    static variant<int32_t, double, string>
+    inputOutput2(vector<variant<int32_t, double, string>> params) {
+        return ((T(*)(T, T))(fn))(get<T>(params[0]), get<T>(params[1]));
+    }
 };
 
 class method {

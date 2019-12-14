@@ -96,7 +96,7 @@ optional<reference_wrapper<const method>> callNode::resolveMethod() {
                 score = INT8_MAX;
                 break;
             }
-            if (commonType != parType) {
+            if (canType != parType) {
                 score += 1;
             }
         }
