@@ -419,7 +419,11 @@ void ex(nodeType &p, ExpectedType expecting) {
                         ctx.ilbuf << "\tcall ";
                     }
                     ctx.ilbuf << resolvedMethod.getFullQualifier();
-                    ctx.currentStack -= resolvedMethod.parameters.size() - 1;
+                    ctx.currentStack -= resolvedMethod.parameters.size();
+                    if (cNode.isCtor || resolvedMethod.returnType != "void") {
+                        ctx.currentStack += 1;
+                        ctx.maxStack = max(ctx.currentStack, ctx.maxStack);
+                    }
                 } else {
                     cerr << "Cannot find an overloaded method: " << cNode.func
                          << endl;

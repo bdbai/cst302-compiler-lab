@@ -2,6 +2,8 @@
 #include <iostream>
 #include <limits>
 #include <random>
+#include <filesystem>
+#include <fstream>
 
 #include "method.h"
 void string_replace(string &haystack, const string &needle,
@@ -272,6 +274,58 @@ unordered_multimap<string, method> methodMap = {
                   double(get<int32_t>(input[1])),
                   double(get<int32_t>(input[2])));
               return int32_t(dis(gen));
+          })}},
+    {"fileExists",
+     {"fileExists",
+      false,
+      false,
+      "bool",
+      "System.IO.FileSystem",
+      "System.IO.File",
+      "Exists",
+      {"string"},
+      (void *)(variant<int32_t, double, string> (*)(
+          vector<variant<int32_t, double, string>>))(
+          [](vector<variant<int32_t, double, string>> input)
+              -> variant<int32_t, double, string> {
+              return std::filesystem::exists(unquote(get<string>(input[0])));
+          })}},
+    {"fileRead",
+     {"fileRead",
+      false,
+      false,
+      "string",
+      "System.IO.FileSystem",
+      "System.IO.File",
+      "ReadAllText",
+      {"string"},
+      (void *)(variant<int32_t, double, string> (*)(
+          vector<variant<int32_t, double, string>>))(
+          [](vector<variant<int32_t, double, string>> input)
+              -> variant<int32_t, double, string> {
+              std::ifstream fs(unquote(get<string>(input[0])));
+              return quote(string((std::istreambuf_iterator<char>(fs)),
+                                  std::istreambuf_iterator<char>()));
+          })}},
+    {"fileWrite",
+     {"fileWrite",
+      false,
+      false,
+      "void",
+      "System.IO.FileSystem",
+      "System.IO.File",
+      "WriteAllText",
+      {"string", "string"},
+      (void *)(variant<int32_t, double, string> (*)(
+          vector<variant<int32_t, double, string>>))(
+          [](vector<variant<int32_t, double, string>> input)
+              -> variant<int32_t, double, string> {
+              fstream fs;
+              fs.open(unquote(get<string>(input[0])),
+                      fstream::out | fstream::trunc);
+              fs << unquote(get<string>(input[1]));
+              fs.flush();
+              return 1;
           })}},
 };
 

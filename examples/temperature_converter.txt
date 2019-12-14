@@ -8,7 +8,7 @@
  * 2. Auto-infered data types (integer, double and string);
  * 3. Variable names with multiple characters;
  * 4. Binary operators (`+=`) and logical operators (`||`);
- * 5. Control flow statements (`break`);
+ * 5. Control flow statements (`for` and `break`);
  * 6. Function calls (`input`, `parseInt`, `parseDouble`, `readInput` and
  *    `round`);
  * 7. Function definition (`readInput`).
@@ -32,7 +32,7 @@ fn readInput(itemCount int32) int32 {
 }
 
 selection = -1;
-while (1) {
+for (;;) {
     print "Please choose the input temperature unit:";
     print "1. degree Celsius (°C)";
     print "2. degree Fahrenheit (°F)";

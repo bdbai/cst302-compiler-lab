@@ -1,0 +1,65 @@
+/**
+ * Demo: Number Guessing Game
+ *
+ * In this program, we will demonstrate the following language features by
+ * implementing a number guessing game:
+ *
+ * 1. Block comments;
+ * 2. Auto-infered data types (integer and string);
+ * 3. Variable names with multiple characters;
+ * 4. Binary operators (`+=`) and logical operators (`||`);
+ * 5. Control flow statements (`while`, `break` and `continue`);
+ * 6. Function calls (`randomInt`, `parseInt`, `input`, `toString`,
+ *    `fileExists`, `fileRead` and `fileWrite`);
+ * 7. Object initialization (`Random`).
+ *
+ */
+
+print "+-----------------------+";
+print "|                       |";
+print "| Number Guessing Game  |";
+print "|                       |";
+print "+-----------------------+\n\n";
+
+HIGHEST_SCORE_FILE = "ng_highest_score.txt";
+
+rnd = new Random();
+ourNumber = randomInt(rnd, 1, 100);
+print "Welcome to our number guessing game!";
+highestScore = 0;
+trial = 0;
+if (fileExists(HIGHEST_SCORE_FILE)) {
+    highestScore = parseInt(fileRead(HIGHEST_SCORE_FILE));
+    print "Your best record is: " + toString(highestScore) + " attempts.";
+}
+while (1) {
+    print "Please guess a number between 1 and 100:";
+    userNumber = parseInt(input());
+    if (userNumber <= 0) {
+        break;
+    }
+    if (userNumber > 100) {
+        print "Invalid input";
+        continue;
+    }
+    trial += 1;
+    if (userNumber > ourNumber) {
+        print "Your number is greater than our number!";
+    } else if (userNumber < ourNumber) {
+        print "Your number is less than our number!";
+    } else {
+        print "Congratulations! Your guess is correct!";
+        print "It took you " + toString(trial) + " attempts to guess this number!\n";
+        if (trial < highestScore || highestScore == 0) {
+            if (highestScore != 0) {
+                print "You have broken your best record!";
+            }
+            highestScore = trial;
+            fileWrite(HIGHEST_SCORE_FILE, toString(highestScore));
+        }
+        trial = 0;
+        ourNumber = randomInt(rnd, 1, 100);
+    }
+}
+
+print "Goodbye!";
