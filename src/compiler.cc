@@ -150,9 +150,18 @@ void exBin(const operatorNode &opr) {
             break;
         }
     } else if (commonType == "string" && opr.operatorToken == '+') {
-        ctx.ilbuf << "\tcall string "
-                     "[mscorlib]System.String::Concat(string, string)"
+        ctx.ilbuf
+            << "\tcall string [mscorlib]System.String::Concat(string, string)"
+            << endl;
+    } else if (commonType == "string" && opr.operatorToken == token::EQ) {
+        ctx.ilbuf << "\tcall bool [mscorlib]System.String::op_Equality(string, "
+                     "string)"
                   << endl;
+    } else if (commonType == "string" && opr.operatorToken == token::NE) {
+        ctx.ilbuf
+            << "\tcall bool [mscorlib]System.String::op_Inequality(string, "
+               "string)"
+            << endl;
     } else {
         cerr << "Cannot perform binary operation " << opr.operatorToken
              << " on " << type1 << " and " << type2 << endl;

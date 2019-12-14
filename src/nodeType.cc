@@ -1,4 +1,5 @@
 #include "nodeType.h"
+#include "y.tab.hh"
 
 map<string, symbol> symbols;
 
@@ -133,6 +134,15 @@ const string nodeType::inferType() {
             [](operatorNode &oprNode) -> const string {
                 if (!oprNode.operands.has_value()) {
                     return "!";
+                }
+                switch (oprNode.operatorToken) {
+                case yy::parser::token::EQ:
+                case yy::parser::token::NE:
+                case yy::parser::token::GE:
+                case yy::parser::token::LE:
+                case '>':
+                case '<':
+                    return "int32";
                 }
                 return visit(
                     overloaded{

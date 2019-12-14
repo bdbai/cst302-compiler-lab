@@ -13,8 +13,8 @@ convertType(const variant<int32_t, double, string> &from,
     if (typeFrom == "int32" && typeTo == "float64") {
         return static_cast<double>(get<int32_t>(from));
         // Implicit cast from f64 to i32 is not allowed
-        // } else if (typeFrom == "float64" && typeTo == "int32") {
-        //     return static_cast<int32_t>(get<double>(from));
+    } else if (typeFrom == "float64" && typeTo == "int32") {
+        return static_cast<int32_t>(get<double>(from));
     } else {
         cerr << "Cannot convert " << typeFrom << " to " << typeTo << endl;
         abort();
@@ -123,7 +123,19 @@ variant<int32_t, double, string> exBin(const operatorNode &opr) {
                holds_alternative<string>(opr2)) {
         const auto &str1 = get<string>(opr1);
         const auto &str2 = get<string>(opr2);
-        return str1.substr(0, str1.size() - 1) + str2.substr(1);
+        return quote(unquote(str1) + unquote(str2));
+    } else if (opr.operatorToken == token::EQ &&
+               holds_alternative<string>(opr1) &&
+               holds_alternative<string>(opr2)) {
+        const auto &str1 = get<string>(opr1);
+        const auto &str2 = get<string>(opr2);
+        return unquote(str1) == unquote(str2);
+    } else if (opr.operatorToken == token::NE &&
+               holds_alternative<string>(opr1) &&
+               holds_alternative<string>(opr2)) {
+        const auto &str1 = get<string>(opr1);
+        const auto &str2 = get<string>(opr2);
+        return unquote(str1) != unquote(str2);
     } else {
         // TODO: other types
         cerr << "Cannot perform operations because of unknown types" << endl;
