@@ -150,10 +150,9 @@ void exBin(const operatorNode &opr) {
             break;
         }
     } else if (commonType == "string" && opr.operatorToken == '+') {
-        ctx.ilbuf
-            << "\tcall string "
-               "[System.Private.CoreLib]System.String::Concat(string, string)"
-            << endl;
+        ctx.ilbuf << "\tcall string "
+                     "[mscorlib]System.String::Concat(string, string)"
+                  << endl;
     } else {
         cerr << "Cannot perform binary operation " << opr.operatorToken
              << " on " << type1 << " and " << type2 << endl;
