@@ -141,7 +141,21 @@ variant<int32_t, double, string> exBin(const operatorNode &opr) {
     }
 }
 
-void ex(nodeType &p) { interpret(p); }
+void ex(nodeType &p) {
+    try {
+        interpret(p);
+    } catch (const continueException &) {
+        cerr << "continue statement is not allowed without an enclosing loop"
+             << endl;
+        abort();
+    } catch (const breakException &) {
+        cerr << "break statement is not allowed without an enclosing loop"
+             << endl;
+        abort();
+    } catch (const returnException &) {
+        exit(0);
+    }
+}
 
 variant<int32_t, double, string> interpretUminus(const operatorNode &p) {
     const auto oprand =

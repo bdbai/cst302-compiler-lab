@@ -269,14 +269,16 @@ void exUminus(const operatorNode &p) {
 
 void exContinue() {
     if (ctx.continueJump.empty()) {
-        cerr << "continue statement is not allowed" << endl;
+        cerr << "continue statement is not allowed without an enclosing loop"
+             << endl;
         abort();
     }
     ctx.ilbuf << "\tbr LABEL" << ctx.continueJump.top() << endl;
 }
 void exBreak() {
     if (ctx.breakJump.empty()) {
-        cerr << "break statement is not allowed" << endl;
+        cerr << "break statement is not allowed without an enclosing loop"
+             << endl;
         abort();
     }
     auto &jumpTop = ctx.breakJump.top();
