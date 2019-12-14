@@ -77,7 +77,8 @@ optional<reference_wrapper<const method>> callNode::resolveMethod() {
     }
     int8_t retScore = INT8_MAX;
     optional<reference_wrapper<const method>> ret;
-    for (auto it = methodMap.find(this->func); it != methodMap.end(); it++) {
+    auto range = methodMap.equal_range(this->func);
+    for (auto it = range.first; it != range.second; it++) {
         if (it->second.parameters.size() != this->params.size()) {
             continue;
         }
