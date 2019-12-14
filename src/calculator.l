@@ -31,11 +31,11 @@ extern bool closingIf;
 "print"                 return yy::parser::token::PRINT;
 [_a-zA-Z][_a-zA-Z0-9]*  return yy::parser::make_VARIABLE(string(yytext));
 0                       return yy::parser::make_INTEGER(atoi(yytext));
--?[1-9][0-9]*           return yy::parser::make_INTEGER(atoi(yytext));
--?(0|[1-9][[:digit:]]*)\.([[:digit:]]*)?([eE][-+]?[[:digit:]]*)? {
+[1-9][0-9]*           return yy::parser::make_INTEGER(atoi(yytext));
+(0|[1-9][[:digit:]]*)\.([[:digit:]]*)?([eE][-+]?[[:digit:]]*)? {
                         return yy::parser::make_DECIMAL(stod(yytext));
 }
--?(0|[1-9][[:digit:]]*)[eE][-+]?[[:digit:]]* {
+(0|[1-9][[:digit:]]*)[eE][-+]?[[:digit:]]* {
                         return yy::parser::make_DECIMAL(stod(yytext));
 }
 "/*"                    {
