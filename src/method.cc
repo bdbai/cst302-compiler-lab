@@ -2,7 +2,6 @@
 #include <iostream>
 #include <limits>
 #include <random>
-#include <filesystem>
 #include <fstream>
 
 #include "method.h"
@@ -535,7 +534,8 @@ unordered_multimap<string, method> methodMap = {
           vector<variant<int32_t, double, string>>))(
           [](vector<variant<int32_t, double, string>> input)
               -> variant<int32_t, double, string> {
-              return std::filesystem::exists(unquote(get<string>(input[0])));
+              ifstream fs(unquote(get<string>(input[0])));
+              return fs.good();
           })}},
     {"fileRead",
      {"fileRead",
