@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <variant>
 #include <memory>
+#include <sstream>
 class func;
 
 using namespace std;
@@ -41,6 +42,8 @@ class method {
     vector<string> parameters;
     variant<int32_t, double, string>
     call(vector<variant<int32_t, double, string>>) const;
+    string getFullQualifier() const;
+    string getFullTypeQualifier() const;
     optional<reference_wrapper<func>> getAsFunc() const;
 };
 

@@ -38,7 +38,8 @@ const unordered_map<int, const char *> tokenToStr = {
     {token::FOR, "for"},
     {token::CONTINUE, "continue"},
     {token::BREAK, "break"},
-    {token::RETURN, "return"}};
+    {token::RETURN, "return"},
+    {token::NEW, "new"}};
 
 int del = 1; /* distance of graph columns */
 int eps = 3; /* distance of graph lines */

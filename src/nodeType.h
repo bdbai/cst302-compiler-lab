@@ -61,8 +61,10 @@ class callNode {
     optional<reference_wrapper<const method>> resolvedMethod;
 
   public:
-    callNode(const string &func, vector<unique_ptr<nodeType>> params)
-        : func(func), params(move(params)) {}
+    callNode(const string &func, vector<unique_ptr<nodeType>> params,
+             bool isCtor)
+        : isCtor(isCtor), func(func), params(move(params)) {}
+    bool isCtor;
     string func;
     vector<unique_ptr<nodeType>> params;
     optional<reference_wrapper<const method>> resolveMethod();
@@ -98,6 +100,8 @@ class nodeType {
     static unique_ptr<nodeType> make_opas(int opr, const string symbol,
                                           unique_ptr<nodeType> arg);
     static unique_ptr<nodeType> make_call(const string &func,
+                                          vector<unique_ptr<nodeType>> params);
+    static unique_ptr<nodeType> make_ctor(const string &func,
                                           vector<unique_ptr<nodeType>> params);
     void push_op(unique_ptr<nodeType> op);
     const string inferType();

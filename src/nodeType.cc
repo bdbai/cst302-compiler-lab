@@ -68,7 +68,12 @@ unique_ptr<nodeType> nodeType::make_opas(int opr, const string symbol,
 }
 unique_ptr<nodeType> nodeType::make_call(const string &func,
                                          vector<unique_ptr<nodeType>> params) {
-    callNode node(func, move(params));
+    callNode node(func, move(params), false);
+    return make_unique<nodeType>(move(node));
+}
+unique_ptr<nodeType> nodeType::make_ctor(const string &func,
+                                         vector<unique_ptr<nodeType>> params) {
+    callNode node(func, move(params), true);
     return make_unique<nodeType>(move(node));
 }
 optional<reference_wrapper<const method>> callNode::resolveMethod() {
@@ -178,10 +183,14 @@ const string nodeType::inferType() {
                 return "!";
             },
             [](callNode &cNode) -> const string {
-                // TODO: infer function return type
                 const auto &method = cNode.resolveMethod();
                 if (method.has_value()) {
-                    return method.value().get().returnType;
+                    if (cNode.isCtor) {
+                        return "class " +
+                               method.value().get().getFullTypeQualifier();
+                    } else {
+                        return method.value().get().returnType;
+                    }
                 } else {
                     return "!";
                 }

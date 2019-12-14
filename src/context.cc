@@ -8,7 +8,7 @@ ExpectedType Context::typeStringToExpected(const string &type) {
     } else if (type == "string") {
         return ExpectedType::String;
     } else {
-        cerr << "Unknown type to expect: " << type << endl;
-        abort();
+        // May be a reference type
+        return ExpectedType::Any;
     }
 }

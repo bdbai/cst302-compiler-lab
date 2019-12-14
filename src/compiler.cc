@@ -395,7 +395,9 @@ void ex(nodeType &p, ExpectedType expecting) {
                          i++) {
                         ex(*cNode.params[i], Context::typeStringToExpected(
                                                  resolvedMethod.parameters[i]));
-                        if (i == 0 && resolvedMethod.isInstance) {
+                        if (i == 0 && resolvedMethod.isInstance &&
+                            (cNode.params[i]->inferType() == "int32" ||
+                             cNode.params[i]->inferType() == "float64")) {
                             symbol sym;
                             sym.literal = "intermediate symbol";
                             sym.ilid = ctx.currentLoc++;
@@ -408,32 +410,16 @@ void ex(nodeType &p, ExpectedType expecting) {
                                       << sym.ilid << endl;
                         }
                     }
-                    if (resolvedMethod.isVirtual) {
+
+                    if (cNode.isCtor) {
+                        ctx.ilbuf << "\tnewobj ";
+                    } else if (resolvedMethod.isVirtual) {
                         ctx.ilbuf << "\tcallvirt ";
                     } else {
                         ctx.ilbuf << "\tcall ";
                     }
-                    if (resolvedMethod.isInstance) {
-                        ctx.ilbuf << "instance ";
-                    }
-                    ctx.ilbuf << resolvedMethod.returnType << ' ';
-                    if (resolvedMethod.assemblyName != "calculator") {
-                        ctx.ilbuf << '[' << resolvedMethod.assemblyName << ']'
-                                  << resolvedMethod.typeQualifier << ':' << ':';
-                    }
-                    ctx.ilbuf << resolvedMethod.methodName << '(';
-                    for (size_t i = resolvedMethod.isInstance;
-                         i < resolvedMethod.parameters.size(); i++) {
-                        if (i) {
-                            ctx.ilbuf << ',' << ' ';
-                        }
-                        ctx.ilbuf << resolvedMethod.parameters[i];
-                    }
-                    ctx.ilbuf << ')' << endl;
+                    ctx.ilbuf << resolvedMethod.getFullQualifier();
                     ctx.currentStack -= resolvedMethod.parameters.size() - 1;
-                    if (resolvedMethod.returnType == "void") {
-                        ctx.currentStack--;
-                    }
                 } else {
                     cerr << "Cannot find an overloaded method: " << cNode.func
                          << endl;
