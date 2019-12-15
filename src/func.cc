@@ -15,7 +15,7 @@ shared_ptr<func> func::make_func(string name, vector<symbol> params,
                                  unique_ptr<nodeType> bodyStmts) {
     unordered_set<string> param_names;
     for (const auto &sym : params) {
-        const auto [it, inserted] = param_names.insert(sym.literal);
+        const auto inserted = param_names.insert(sym.literal).second;
         if (!inserted) {
             cerr << "Duplicated parameter name: " << sym.literal << endl;
             abort();

@@ -36,8 +36,8 @@ void endFunction(ostream &out) {
         // Print locals
         out << "\t.locals init (" << endl;
         bool first = true;
-        for (const auto &[_, sym] : symbols) {
-            if (sym.ilpostfix != "loc") {
+        for (const auto &sym : symbols) {
+            if (sym.second.ilpostfix != "loc") {
                 continue;
             }
             if (first) {
@@ -45,7 +45,7 @@ void endFunction(ostream &out) {
             } else {
                 out << ',' << endl;
             }
-            out << "\t\t[" << sym.ilid << "] " << sym.type;
+            out << "\t\t[" << sym.second.ilid << "] " << sym.second.type;
         }
         out << endl << "\t)" << endl;
     }
