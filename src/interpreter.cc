@@ -28,7 +28,7 @@ void exAssign(const operatorNode &opr) {
     const auto &id = *id_ptr;
     auto &expr = *expr_ptr;
     const auto &variableNode = get<symbolNode>(id.innerNode);
-    const auto value = interpret(expr);
+    auto value = interpret(expr);
     const auto symbolIt = symbols.find(variableNode.symbol);
     if (symbolIt == symbols.end()) {
         // Declare a new variable
@@ -38,10 +38,8 @@ void exAssign(const operatorNode &opr) {
         sym.type = expr.inferType();
         symbols[variableNode.symbol] = sym;
     } else {
-        if (value.value().index() != symbolIt->second.value.value().index()) {
-            cerr << "Type mismatch" << endl;
-            abort();
-        }
+        value =
+            convertType(value.value(), expr.inferType(), symbolIt->second.type);
     }
     auto &sym = symbols[variableNode.symbol];
     sym.value = value;
