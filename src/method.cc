@@ -449,7 +449,7 @@ unordered_multimap<string, method> methodMap = {
           vector<variant<int32_t, double, string>>))(
           [](vector<variant<int32_t, double, string>>)
               -> variant<int32_t, double, string> {
-              return "System.Random";
+              return quote("System.Random");
           })}},
     {"randomDouble",
      {"randomDouble",
