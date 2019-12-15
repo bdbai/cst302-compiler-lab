@@ -25,7 +25,7 @@ $(LEX_GENERATED_C): $(LEX_FILE)
 	$(LEX) -v -o $@ $^
 
 $(YACC_GENERATED_C): $(YACC_FILE)
-	$(YACC) -v -d -o $@ $^
+	$(YACC) -v -Wno-yacc -d -o $@ $^
 
 $(FILE_INTERPRETER): $(FILE_INTERPRETER).out
 

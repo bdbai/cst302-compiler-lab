@@ -6,7 +6,7 @@
 #include <memory>
 using namespace std;
 #undef YY_DECL
-#define YY_DECL yy::parser::symbol_type Lexer::yylex(int drv)
+#define YY_DECL yy::parser::symbol_type Lexer::yylex(int)
 #include "lexer.h"
 void yyerror(const string &);
 int blockLevel = 0;

@@ -107,9 +107,9 @@ void exFunc(shared_ptr<func> fn) {
 void exNode(const nodeType &p, int c, int l, /* start column and line of node */
             int *ce, int *cm /* resulting end column and mid of node */
 ) {
-    int w, h;     /* node width and height */
-    int cbar;     /* "real" start column of node (centred above subnodes) */
-    int k;        /* child number */
+    int w, h; /* node width and height */
+    int cbar; /* "real" start column of node (centred above subnodes) */
+    // int k;        /* child number */
     int che, chm; /* end column and mid of children */
     int cs;       /* start column of children */
 
@@ -157,7 +157,7 @@ void exNode(const nodeType &p, int c, int l, /* start column and line of node */
 
     const auto leaves = visit(
         overloaded{
-            [](const constantNode &conNode)
+            [](const constantNode &)
                 -> vector<reference_wrapper<const nodeType>> {
                 return vector<reference_wrapper<const nodeType>>();
             },
@@ -305,7 +305,7 @@ void graphBox(char *s, int *w, int *h) {
 }
 
 void graphDrawBox(char *s, int c, int l) {
-    int i;
+    size_t i;
     graphTest(l, c + strlen(s) - 1 + del);
     for (i = 0; i < strlen(s); i++) {
         graph[l][c + i + del] = s[i];
