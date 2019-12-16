@@ -5,9 +5,6 @@ Context ctx(fn);
 
 void before_processing() {
     Lexer::isCompiler = true;
-    cerr << "\u001b[33m"
-         << "To finish input, press Ctrl+D."
-         << "\u001b[0m" << endl;
     globalOut << ".assembly calculator {} " << endl;
     beginFunction(globalOut);
 }
