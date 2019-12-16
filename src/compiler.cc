@@ -100,6 +100,11 @@ void exAssign(const operatorNode &opr) {
     auto &expr = *expr_ptr;
     const auto &variableNode = get<symbolNode>(id.innerNode);
     const auto &type = expr.inferType();
+    if (type == "!" || type == "void") {
+        cerr << "Cannot assign " << type << " to variable "
+             << variableNode.symbol << endl;
+        abort();
+    }
     ex(expr, Context::typeStringToExpected(type));
     const auto symbolIt = symbols.find(variableNode.symbol);
     if (symbolIt == symbols.end()) {
@@ -128,7 +133,7 @@ void exBin(const operatorNode &opr) {
     const auto &type1 = opr1->inferType();
     const auto &type2 = opr2->inferType();
     auto commonType = getTypeCommon(type1, type2);
-    if (commonType == "!") {
+    if (commonType == "!" || commonType == "void") {
         cerr << "Cannot perform binary operation " << opr.operatorToken
              << " on " << type1 << " and " << type2 << endl;
         abort();
@@ -168,7 +173,7 @@ void exBin(const operatorNode &opr) {
              << " on " << type1 << " and " << type2 << endl;
         abort();
     }
-    ctx.currentStack -= 1;
+    ctx.currentStack--;
 }
 
 void exLoop(nodeType &condNode, nodeType &bodyNode,
@@ -177,6 +182,11 @@ void exLoop(nodeType &condNode, nodeType &bodyNode,
     auto nextLabel = checkLabel;
     if (nextNode.has_value()) {
         nextLabel = ++label;
+    }
+    const auto &condType = condNode.inferType();
+    if (condType == "!" || condType == "void") {
+        cerr << "Bad loop condition expression" << endl;
+        abort();
     }
     ctx.continueJump.push(nextLabel);
     ctx.breakJump.push({});
@@ -254,6 +264,10 @@ void exIf(const operatorNode &p) {
 void exPrint(const operatorNode &p) {
     auto &oprNode = *get<unique_ptr<nodeType>>(p.operands.value());
     const auto &type = oprNode.inferType();
+    if (type == "!" || type == "void") {
+        cerr << "Cannot print non-expression value" << endl;
+        abort();
+    }
     ex(oprNode, Context::typeStringToExpected(type));
     ctx.ilbuf << "\tcall void "
                  "[System.Console]System.Console::"
@@ -336,7 +350,11 @@ void ex(nodeType &p, ExpectedType expecting) {
                             abort();
                         }
                     } else {
-                        if (!oprNode.operands.has_value()) {
+                        if (!oprNode.operands.has_value() ||
+                            get<unique_ptr<nodeType>>(oprNode.operands.value())
+                                    ->inferType() == "!" ||
+                            get<unique_ptr<nodeType>>(oprNode.operands.value())
+                                    ->inferType() == "void") {
                             cerr << "A function with non-void return type must "
                                     "return with a value"
                                  << endl;
